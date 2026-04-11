@@ -6,7 +6,7 @@ import os
 import tkinter as tk
 from contextlib import redirect_stdout
 from datetime import datetime
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 
 from products import CATALOG
 from cart import ShoppingCart
@@ -133,6 +133,7 @@ class ShoppingCartApp:
         history_header = tk.Frame(history, bg=self.panel)
         history_header.pack(fill="x", padx=6, pady=6)
         tk.Label(history_header, text="ORDER HISTORY", fg=self.fg, bg=self.panel, font=self.font).pack(side="left")
+        self._mk_button(history_header, "EXPORT", self._export_history).pack(side="right", padx=(6, 0))
         self._mk_button(history_header, "X", self._delete_order).pack(side="right")
         self.orders_list = tk.Listbox(
             history,
@@ -350,6 +351,67 @@ class ShoppingCartApp:
         self._save_db()
         self._refresh_orders()
         self._set_status("Usunieto zamowienie.")
+
+    def _export_history(self) -> None:
+        orders = self.db.get("orders", [])
+        if not orders:
+            self._set_status("Brak zamowien do eksportu.")
+            return
+
+        headers = ["DATA", "KLIENT", "EMAIL", "PLATNOSC", "SUMA", "DOSTAWA", "TOTAL"]
+        rows = []
+        for o in orders:
+            rows.append([
+                o.get("timestamp", ""),
+                o.get("customer", {}).get("name", ""),
+                o.get("customer", {}).get("email", ""),
+                o.get("payment_method", ""),
+                f"{o.get('subtotal', 0.0):.2f} zl",
+                f"{o.get('delivery', 0.0):.2f} zl",
+                f"{o.get('total', 0.0):.2f} zl",
+            ])
+
+        widths = [len(h) for h in headers]
+        for r in rows:
+            for i, val in enumerate(r):
+                widths[i] = max(widths[i], len(str(val)))
+
+        def line(char: str = "-") -> str:
+            return "+" + "+".join(char * (w + 2) for w in widths) + "+"
+
+        def fmt_row(values) -> str:
+            cells = []
+            for i, v in enumerate(values):
+                text = str(v)
+                cells.append(" " + text.ljust(widths[i]) + " ")
+            return "|" + "|".join(cells) + "|"
+
+        out = []
+        out.append("SHOPPING CART - ORDER HISTORY EXPORT")
+        out.append(line("="))
+        out.append(fmt_row(headers))
+        out.append(line("-"))
+        for r in rows:
+            out.append(fmt_row(r))
+        out.append(line("="))
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_name = f"order_history_{ts}.txt"
+        path = filedialog.asksaveasfilename(
+            title="Zapisz eksport historii",
+            defaultextension=".txt",
+            initialfile=default_name,
+            filetypes=[("Pliki tekstowe", "*.txt"), ("Wszystkie pliki", "*.*")],
+        )
+        if not path:
+            self._set_status("Anulowano eksport.")
+            return
+
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(out))
+
+        self._set_status(f"Wyeksportowano do pliku: {os.path.basename(path)}")
+        messagebox.showinfo("Eksport", f"Historia zamowien zapisana w pliku:\\n{path}")
 
     def _on_order_select(self, _event=None) -> None:
         sel = self.orders_list.curselection()
