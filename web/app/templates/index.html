@@ -1,0 +1,66 @@
+﻿<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shopping Cart Web</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="title">SHOPPING CART / WEB</div>
+    <div class="subtitle">Retro UI + Neon/Postgres Ready</div>
+  </header>
+
+  <main class="grid">
+    <section class="panel">
+      <div class="panel-title">KATALOG</div>
+      <ul id="catalog" class="list"></ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">KOSZYK</div>
+      <div class="row">
+        <input id="qty" class="input" type="number" min="1" value="1" />
+        <button id="add-to-cart" class="btn">DODAJ</button>
+        <button id="remove-from-cart" class="btn">USUN</button>
+        <button id="clear-cart" class="btn">WYCZYSC</button>
+      </div>
+      <ul id="cart" class="list"></ul>
+      <div id="totals" class="totals"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">KLIENCI</div>
+      <div class="row">
+        <input id="customer-name" class="input" placeholder="Imie i nazwisko" />
+        <input id="customer-email" class="input" placeholder="email" />
+        <button id="add-customer" class="btn">DODAJ</button>
+      </div>
+      <ul id="customers" class="list"></ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">ORDER HISTORY</div>
+      <ul id="orders" class="list"></ul>
+      <pre id="order-details" class="details"></pre>
+    </section>
+
+    <section class="panel wide">
+      <div class="panel-title">PLATNOSC</div>
+      <div class="row">
+        <select id="payment-method" class="input">
+          <option value="Karta kredytowa">Karta kredytowa</option>
+          <option value="PayPal">PayPal</option>
+          <option value="Bitcoin">Bitcoin</option>
+        </select>
+        <button id="place-order" class="btn">ZAMOW</button>
+      </div>
+      <div id="payment-fields" class="row"></div>
+      <div id="status" class="status">Gotowe.</div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
