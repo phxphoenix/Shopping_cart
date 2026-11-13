@@ -6,8 +6,8 @@ def run():
     try:
         if db.query(Customer).count() == 0:
             db.add_all([
-                Customer(name="Michał Pasikowski", email="ppp.poczta@gmail.com"),
-                Customer(name="Drugi Klient", email="emaila.poczta@gmail.com"),
+                Customer(name="Jan Kowalski", email="jan.kowalski@example.com"),
+                Customer(name="Anna Nowak", email="anna.nowak@example.com"),
             ])
             db.commit()
             print("Seeded customers")

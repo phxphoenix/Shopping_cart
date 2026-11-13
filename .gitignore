@@ -1,23 +1,53 @@
-﻿# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+﻿# Node & Package Managers
+node_modules/
+.pnp
+.pnp.js
 
-# Virtual env
-.venv/
-
-# IDE
-.idea/
-
-# Build artifacts
-build/
+# Build Artifacts
 dist/
+dist-ssr/
+build/
 *.spec
 
-# App data / exports
+# Test & Coverage Outputs
+coverage/
+playwright-report/
+blob-report/
+test-results/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+legacy/web/.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE & Editor Files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Legacy Python Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Application Data & Export Artifacts
 data.json
 order_history_*.txt
-
-# Web env
-web/.env
