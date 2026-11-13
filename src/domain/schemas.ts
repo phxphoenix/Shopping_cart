@@ -99,11 +99,55 @@ export const OrderSchema = z.object({
 });
 export type Order = z.infer<typeof OrderSchema>;
 
+export const ProductCategorySchema = z.enum([
+  'Elektronika',
+  'Odziez',
+  'Akcesoria',
+  'Edukacja',
+  'Retro Hardware',
+]);
+export type ProductCategoryState = z.infer<typeof ProductCategorySchema>;
+
+export const ProductSchema = z.object({
+  id: z.string().min(1),
+  sku: z.string().min(1),
+  name: z.string().min(1),
+  priceCents: z
+    .number()
+    .int()
+    .nonnegative()
+    .transform((val) => toCents(val)),
+  category: ProductCategorySchema,
+  description: z.string(),
+  inStock: z.boolean(),
+  stockQuantity: z.number().int(),
+});
+export type ProductState = z.infer<typeof ProductSchema>;
+
+export const CartItemSchema = z.object({
+  product: ProductSchema,
+  quantity: z.number().int().positive(),
+  lineTotalCents: z
+    .number()
+    .int()
+    .nonnegative()
+    .transform((val) => toCents(val)),
+});
+export type CartItemState = z.infer<typeof CartItemSchema>;
+
+export const ShopSettingsSchema = z.object({
+  crtFx: z.boolean().default(true),
+});
+export type ShopSettings = z.infer<typeof ShopSettingsSchema>;
+
 export const PersistedShopStateSchema = z.object({
   version: z.literal(2),
   exportedAt: z.string(),
   customers: z.array(CustomerSchema),
   orders: z.array(OrderSchema),
+  cart: z.array(CartItemSchema).optional().default([]),
+  selectedCustomerId: z.string().nullable().optional().default(null),
+  settings: ShopSettingsSchema.optional().default({ crtFx: true }),
 });
 export type PersistedShopState = z.infer<typeof PersistedShopStateSchema>;
 
@@ -112,6 +156,9 @@ export interface ParsedBackupState {
   readonly exportedAt: string;
   readonly customers: readonly Customer[];
   readonly orders: readonly Order[];
+  readonly cart?: readonly CartItemState[];
+  readonly selectedCustomerId?: string | null;
+  readonly settings?: ShopSettings;
 }
 
 // ---------------------------------------------------------------------------
@@ -399,5 +446,8 @@ export function parseLegacyOrCurrentBackup(jsonString: string): ParsedBackupStat
     exportedAt: new Date().toISOString(),
     customers,
     orders,
+    cart: [],
+    selectedCustomerId: customers[0]?.id ?? null,
+    settings: { crtFx: true },
   };
 }
