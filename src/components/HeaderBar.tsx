@@ -22,7 +22,15 @@ export function HeaderBar() {
 
     setIsProcessing(true);
     try {
-      const text = await file.text();
+      const text =
+        typeof file.text === 'function'
+          ? await file.text()
+          : await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = () => reject(reader.error);
+              reader.readAsText(file);
+            });
       const result = await importBackupJson(text);
       if (!result.success) {
         setStatus(`BŁĄD IMPORTU: ${result.message}`, 'error');

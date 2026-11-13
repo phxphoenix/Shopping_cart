@@ -10,3 +10,18 @@ if (typeof window !== 'undefined') {
     window.URL.revokeObjectURL = vi.fn();
   }
 }
+
+// JSDOM does not implement File.prototype.text / Blob.prototype.text
+if (typeof Blob !== 'undefined' && !Blob.prototype.text) {
+  Blob.prototype.text = function () {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(this);
+    });
+  };
+}
+if (typeof File !== 'undefined' && !File.prototype.text) {
+  File.prototype.text = Blob.prototype.text;
+}

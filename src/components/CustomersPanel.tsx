@@ -78,6 +78,7 @@ export function CustomersPanel() {
       {/* Formularz dodania nowego klienta */}
       <form
         onSubmit={handleSubmit}
+        noValidate
         style={{
           border: '1px solid var(--border-dim)',
           padding: '0.75rem',

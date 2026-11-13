@@ -199,7 +199,7 @@ export function CheckoutPanel() {
       </div>
 
       {/* Dynamiczny formularz płatności */}
-      <form onSubmit={handleSubmit} aria-label="Formularz finalizacji płatności">
+      <form onSubmit={handleSubmit} noValidate aria-label="Formularz finalizacji płatności">
         {/* Metoda 1: Karta kredytowa */}
         {method === 'card' && (
           <div

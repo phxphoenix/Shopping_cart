@@ -101,18 +101,18 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
                 Metoda płatności:
               </div>
               <div style={{ color: 'var(--text-bright)', marginTop: '0.2rem' }}>
-                {order.paymentMethod === 'card' && payment?.method === 'card' && (
+                {payment?.method === 'card' && (
                   <span>
                     Karta kredytowa: <strong>{payment.maskedCard}</strong> (ważność:{' '}
                     {payment.expiry})
                   </span>
                 )}
-                {order.paymentMethod === 'paypal' && payment?.method === 'paypal' && (
+                {payment?.method === 'paypal' && (
                   <span>
                     PayPal: <strong>{payment.email}</strong>
                   </span>
                 )}
-                {order.paymentMethod === 'bitcoin' && payment?.method === 'bitcoin' && (
+                {payment?.method === 'bitcoin' && (
                   <span>
                     Bitcoin: <strong>{payment.walletAddress}</strong> (kwota: {payment.btcAmount}{' '}
                     BTC)
