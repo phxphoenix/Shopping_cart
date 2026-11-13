@@ -1,51 +1,62 @@
-import type { CSSProperties } from 'react';
-
-const containerStyle: CSSProperties = {
-  minHeight: '100vh',
-  backgroundColor: '#0b0f0b',
-  color: '#21f35a',
-  fontFamily: "'Courier New', Courier, monospace",
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: '1.5rem',
-  boxSizing: 'border-box',
-};
-
-const terminalBoxStyle: CSSProperties = {
-  border: '2px solid #21f35a',
-  backgroundColor: '#0f1a10',
-  padding: '2rem',
-  maxWidth: '640px',
-  width: '100%',
-  boxShadow: '0 0 15px rgba(33, 243, 90, 0.25)',
-  textAlign: 'center',
-};
-
-const headerStyle: CSSProperties = {
-  margin: '0 0 1rem 0',
-  fontSize: '1.25rem',
-  letterSpacing: '0.08em',
-};
-
-const statusStyle: CSSProperties = {
-  color: '#00ff66',
-  fontSize: '0.95rem',
-  lineHeight: 1.6,
-};
+import { useEffect } from 'react';
+import {
+  HeaderBar,
+  CatalogPanel,
+  CartPanel,
+  CustomersPanel,
+  CheckoutPanel,
+  OrderHistoryPanel,
+  StatusBar,
+} from '@/components';
+import { useShopStore } from '@/store/useShopStore';
 
 export default function App() {
+  const { isInitialized, initialize, settings } = useShopStore();
+
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
+
+  // Ekran startowy podczas ładowania danych ze storage
+  if (!isInitialized) {
+    return (
+      <main className="retro-boot-screen">
+        <div className="retro-boot-box">
+          <h1 className="retro-boot-title">[BOOTING RETRO SHOPPING CART v2.0...]</h1>
+          <p className="retro-boot-status">
+            SYSTEM STATUS: ONLINE
+            <br />
+            TERMINAL READY. WAITING FOR HOST COMMAND.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const crtClassName = settings.crtFx ? 'crt-fx-enabled' : '';
+
   return (
-    <main style={containerStyle}>
-      <div style={terminalBoxStyle}>
-        <h1 style={headerStyle}>[BOOTING RETRO SHOPPING CART v2.0...]</h1>
-        <p style={statusStyle}>
-          SYSTEM STATUS: ONLINE
-          <br />
-          TERMINAL READY. WAITING FOR HOST COMMAND.
-        </p>
-      </div>
-    </main>
+    <div className={`retro-app ${crtClassName}`}>
+      <HeaderBar />
+
+      <main className="retro-main">
+        <div className="terminal-grid">
+          {/* Lewa kolumna: Katalog produktów oraz Historia zamówień */}
+          <div className="terminal-column">
+            <CatalogPanel />
+            <OrderHistoryPanel />
+          </div>
+
+          {/* Prawa kolumna: Baza klientów, Koszyk oraz Kasa */}
+          <div className="terminal-column">
+            <CustomersPanel />
+            <CartPanel />
+            <CheckoutPanel />
+          </div>
+        </div>
+      </main>
+
+      <StatusBar />
+    </div>
   );
 }

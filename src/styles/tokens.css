@@ -1,0 +1,66 @@
+/**
+ * Retro CRT Design System - CSS Tokens
+ *
+ * Paleta barw zgodna z AGENTS.md:
+ * - główne tło: #0b0f0b
+ * - panele i kontenery: #0f1a10
+ * - tekst terminalowy: #21f35a
+ * - akcenty i aktywne elementy: #00ff66
+ * - ostrzeżenia i alerty: #ffb000
+ * - błędy i niepowodzenia: #ff4d4d
+ * - typografia monospace (Courier New, Fira Code, monospace)
+ */
+
+:root {
+  /* Kolory tła */
+  --bg-main: #0b0f0b;
+  --bg-panel: #0f1a10;
+  --bg-panel-header: #142516;
+  --bg-input: #060906;
+  --bg-hover: #163219;
+  --bg-modal-backdrop: rgba(0, 0, 0, 0.85);
+
+  /* Tekst */
+  --text-primary: #21f35a;
+  --text-bright: #00ff66;
+  --text-dim: #138833;
+  --text-muted: #1bb342;
+  --text-inverse: #0b0f0b;
+
+  /* Akcenty i stany */
+  --accent: #00ff66;
+  --warning: #ffb000;
+  --warning-bg: rgba(255, 176, 0, 0.12);
+  --error: #ff4d4d;
+  --error-bg: rgba(255, 77, 77, 0.12);
+  --info: #21f35a;
+  --info-bg: rgba(33, 243, 90, 0.12);
+  --success: #00ff66;
+  --success-bg: rgba(0, 255, 102, 0.12);
+
+  /* Obramowania */
+  --border-main: #21f35a;
+  --border-dim: #18461f;
+  --border-bright: #00ff66;
+  --border-warning: #ffb000;
+  --border-error: #ff4d4d;
+
+  /* Typografia */
+  --font-mono: 'Courier New', 'Fira Code', 'Lucida Console', Monaco, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.85rem;
+  --font-size-base: 0.95rem;
+  --font-size-lg: 1.15rem;
+  --font-size-xl: 1.35rem;
+  --font-size-title: 1.55rem;
+
+  /* Fosfor i CRT Glows */
+  --glow-text: 0 0 5px rgba(33, 243, 90, 0.5);
+  --glow-accent: 0 0 8px rgba(0, 255, 102, 0.6);
+  --glow-box: 0 0 14px rgba(33, 243, 90, 0.22);
+  --glow-modal: 0 0 25px rgba(0, 255, 102, 0.35);
+
+  /* Dostępność: widoczny fokus klawiatury */
+  --focus-outline: 2px solid #00ff66;
+  --focus-offset: 2px;
+}
