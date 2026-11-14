@@ -43,10 +43,7 @@ import {
   type UpdateCategoryPatch,
   type UpdateProductPatch,
 } from '@/domain/catalog';
-import {
-  maskCustomerEmail,
-  validateNewCustomerRegistration,
-} from '@/domain/customer';
+import { maskCustomerEmail, validateNewCustomerRegistration } from '@/domain/customer';
 import {
   generateOrderHistoryFilename,
   generateOrderHistoryTxt,

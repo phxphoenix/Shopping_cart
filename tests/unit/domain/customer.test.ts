@@ -60,14 +60,17 @@ describe('domain/customer (Registration Validation, Honeypot & PII Masking)', ()
       ).toBe(false);
 
       expect(
-        RegisterCustomerInputSchema.safeParse({ name: 'A'.repeat(81), email: 'a@example.com' }).success
+        RegisterCustomerInputSchema.safeParse({ name: 'A'.repeat(81), email: 'a@example.com' })
+          .success
       ).toBe(false);
     });
 
     it('rejects names containing numbers or special punctuation characters', () => {
       expect(
-        RegisterCustomerInputSchema.safeParse({ name: 'Jan Kowalski 123', email: 'jan@example.com' })
-          .success
+        RegisterCustomerInputSchema.safeParse({
+          name: 'Jan Kowalski 123',
+          email: 'jan@example.com',
+        }).success
       ).toBe(false);
 
       expect(
@@ -116,8 +119,7 @@ describe('domain/customer (Registration Validation, Honeypot & PII Masking)', ()
       ).toBe(false);
 
       expect(
-        RegisterCustomerInputSchema.safeParse({ name: 'Jan Kowalski', email: 'jan@nodot' })
-          .success
+        RegisterCustomerInputSchema.safeParse({ name: 'Jan Kowalski', email: 'jan@nodot' }).success
       ).toBe(false);
 
       expect(
@@ -184,8 +186,12 @@ describe('domain/customer (Registration Validation, Honeypot & PII Masking)', ()
     });
 
     it('returns false when email already exists (case-insensitive check)', () => {
-      expect(validateUniqueCustomerEmail(existingCustomers, 'jan.kowalski@example.com')).toBe(false);
-      expect(validateUniqueCustomerEmail(existingCustomers, 'JAN.KOWALSKI@EXAMPLE.COM')).toBe(false);
+      expect(validateUniqueCustomerEmail(existingCustomers, 'jan.kowalski@example.com')).toBe(
+        false
+      );
+      expect(validateUniqueCustomerEmail(existingCustomers, 'JAN.KOWALSKI@EXAMPLE.COM')).toBe(
+        false
+      );
       expect(validateUniqueCustomerEmail(existingCustomers, '  Anna.Nowak@example.com  ')).toBe(
         false
       );

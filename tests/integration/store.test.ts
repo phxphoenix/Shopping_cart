@@ -839,9 +839,9 @@ describe('Integration: Zustand Store + In-Memory Storage Adapter', () => {
     });
 
     it('blocks deleting default category (cat-default)', async () => {
-      await expect(
-        store.getState().removeCategory(DEFAULT_CATEGORY_ID)
-      ).rejects.toThrow(/Nie można usunąć domyślnej kategorii/);
+      await expect(store.getState().removeCategory(DEFAULT_CATEGORY_ID)).rejects.toThrow(
+        /Nie można usunąć domyślnej kategorii/
+      );
 
       expect(store.getState().statusTone).toBe('error');
       expect(store.getState().categories.some((c) => c.id === DEFAULT_CATEGORY_ID)).toBe(true);
@@ -852,7 +852,9 @@ describe('Integration: Zustand Store + In-Memory Storage Adapter', () => {
       expect(edukacjaCat).toBeDefined();
 
       // Product 'prod-ksiazka-python' is currently in 'Edukacja'
-      const pythonBookBefore = store.getState().catalog.find((p) => p.id === 'prod-ksiazka-python')!;
+      const pythonBookBefore = store
+        .getState()
+        .catalog.find((p) => p.id === 'prod-ksiazka-python')!;
       expect(pythonBookBefore.categoryId).toBe(edukacjaCat.id);
 
       // Set filter to 'Edukacja'
@@ -1019,7 +1021,9 @@ describe('Integration: Zustand Store + In-Memory Storage Adapter', () => {
         email: 'henryk@trylogia.pl',
       });
       expect(addRes).toBe(true);
-      expect(networkStore.getState().customers.some((c) => c.name === 'Henryk Sienkiewicz')).toBe(true);
+      expect(networkStore.getState().customers.some((c) => c.name === 'Henryk Sienkiewicz')).toBe(
+        true
+      );
     });
   });
 });

@@ -289,7 +289,8 @@ export function CustomersPanel() {
           lineHeight: 1.4,
         }}
       >
-        // INFORMACJA SYSTEMOWA: Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym.
+        // INFORMACJA SYSTEMOWA: Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych
+        sesji w Panelu Administracyjnym.
       </div>
     </section>
   );

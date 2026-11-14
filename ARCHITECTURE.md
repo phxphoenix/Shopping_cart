@@ -1,246 +1,284 @@
-# Architektura Systemu — Shopping Cart (Retro CRT v2.0)
+# Architektura Systemu — Shopping Cart (Retro CRT v3.0)
 
-Dokument opisuje architekturę techniczną, wzorce projektowe, model danych oraz decyzje inżynieryjne wdrożone w wersji **v2.0** aplikacji **Shopping Cart**.
+Dokument opisuje architekturę techniczną, wzorce projektowe, model danych oraz decyzje inżynieryjne wdrożone w wersji **v3.0** aplikacji **Shopping Cart**.
 
 ---
 
 ## 1. Przegląd Architektury i Założenia Projektowe
 
-Aplikacja **Shopping Cart v2.0** została zaprojektowana w modelu **Client-First Single Page Application (SPA)**. Działa w 100% po stronie przeglądarki internetowej i nie wymaga zewnętrznego serwera backendowego ani bazy danych po stronie serwera. Całość jest serwowana jako statyczne pliki (HTML, CSS, JS) bezpośrednio z platformy **GitHub Pages**.
+Aplikacja **Shopping Cart v3.0** została zaprojektowana w nowoczesnym modelu **Full-Stack Jamstack**:
+- **Warstwa kliencka (SPA):** Reaktywna aplikacja React 19 zoptymalizowana pod kątem wydajności, działająca w estetyce zielonego terminala kineskopowego (Retro CRT), z lokalną pamięcią IndexedDB pełniącą funkcję odpornego cache'a i wsparcia offline.
+- **Warstwa backendowa (Vercel Functions):** Bezserwerowe endpointy Node.js hostowane na platformie **Vercel** z wykorzystaniem silnika **Fluid Compute** (`vercel.json`), obsługujące standardowe interfejsy Web API `Request` / `Response`.
+- **Warstwa danych (Neon Serverless Postgres):** Dedykowana baza relacyjna zarządzana przez sterownik `@neondatabase/serverless`, przechowująca relacje kategorii, produktów, klientów i zamówień.
+- **Wzorzec Dual-Mode Repository:** Automatyczne przełączanie pomiędzy `NeonShopRepository` (produkcja/preview Vercel) a deterministycznym `InMemoryShopRepository` (testy Vitest, pipeline CI i lokalny rozwój bez bazy danych).
+- **Zintegrowany Dev/Preview Plugin Vite (`viteApiPlugin`):** Umożliwia uruchamianie i testowanie endpointów `/api/*` bezpośrednio w procesie Node.js serwera Vite bez potrzeby odrębnego serwera backendowego.
 
-### Kluczowe cele architektoniczne:
-1. **Niezależność domeny (Clean / Hexagonal Architecture):** Logika biznesowa jest całkowicie odseparowana od warstwy widoku Reacta i interfejsów przeglądarki (DOM, `window`, storage).
-2. **Precyzja finansowa (Zero-Float Financial Arithmetic):** Całkowite wyeliminowanie błędów zaokrągleń zmiennoprzecinkowych IEEE 754 poprzez operowanie wyłącznie na liczbach całkowitych w groszach (`Cents`).
-3. **Higiena bezpieczeństwa płatności (PCI-DSS Hygiene):** Kody CVV oraz pełne numery kart nigdy nie opuszczają ulotnej pamięci formularza walidacyjnego; w bazie i raportach zapisywane są wyłącznie zanonimizowane maski.
-4. **Odporna persystencja i kompatybilność wsteczna:** Wykorzystanie IndexedDB z automatycznym fallbackiem do `localStorage` oraz mechanizmem migracji plików `data.json` ze starego klienta Tkinter (v1.0).
-5. **Dostępność i estetyka Retro CRT:** Terminalowy klimat monitora kineskopowego z lat 80. połączony ze ścisłą zgodnością ze standardem dostępności WCAG AA oraz obsługą preferencji użytkownika (`prefers-reduced-motion`).
+---
+
+## 2. Diagram Architektury Systemu (Mermaid)
 
 ```mermaid
 flowchart TD
-    subgraph UI_Presentation ["Warstwa Prezentacji (React 19 + Retro CRT CSS)"]
-        Header["HeaderBar (Import/Export, CRT FX)"]
-        Catalog["CatalogPanel (Filtry, Szukanie, Produkty)"]
-        Cart["CartPanel (Ilości, Pasek darmowej dostawy)"]
-        Customer["CustomersPanel (CRUD, Wybór aktywnego)"]
-        Checkout["CheckoutPanel (Karta, PayPal, Bitcoin)"]
-        History["OrderHistoryPanel + OrderDetailsModal"]
-        StatusBar["StatusBar (aria-live='polite')"]
+    subgraph Client_App ["Klient Przeglądarkowy (React 19 + Retro CRT CSS)"]
+        subgraph UI_Public ["Widok Publiczny Sklepu"]
+            Header["HeaderBar (Przełącznik Admina, CRT FX, Import/Export)"]
+            Catalog["CatalogPanel (Dynamiczne kategorie, InStock, SKU)"]
+            Cart["CartPanel (Arytmetyka groszy, Próg darmowej dostawy 200 zł)"]
+            CustPub["CustomersPanel (Maskowanie PII, Pole Honeypot)"]
+            Checkout["CheckoutPanel (PCI-DSS Hygiene: Karta, PayPal, BTC)"]
+            History["OrderHistoryPanel + OrderDetailsModal (Raporty ASCII)"]
+            StatusBar["StatusBar (aria-live='polite')"]
+        end
+
+        subgraph UI_Admin ["Sekcja Administracyjna (Chroniona)"]
+            AdminLogin["AdminLoginModal (Formularz logowania, alerty błędów)"]
+            AdminTabs["AdminPanel (Zakładki nawigacyjne)"]
+            TabCat["[1] KATEGORIE (CRUD, ochrona kat. domyślnej)"]
+            TabProd["[2] PRODUKTY (CRUD, walidacja cen i stanów)"]
+            TabMig["[3] MIGRACJA (Masowe przenoszenie produktów)"]
+            TabCust["[4] KLIENCI (Pełne PII, jedyne uprawnione usuwanie)"]
+        end
+
+        subgraph Client_Store ["Zarządzanie Stanem (Zustand + Sync)"]
+            Store["useShopStore.ts (Optymistyczne akcje + Auto-sync z API)"]
+            IDB["IndexedDbStorageAdapter (idb-keyval + localStorage fallback)"]
+        end
     end
 
-    subgraph State_Management ["Zarządzanie Stanem (Zustand Store)"]
-        Store["useShopStore.ts (Akcje reaktywne + Auto-sync)"]
+    subgraph API_Gateway ["Granica Sieciowa i Bezpieczeństwo HTTP"]
+        CookieAuth["Ciasteczko HttpOnly: retro_admin_session (HMAC-SHA256)"]
+        RateLimiters["Rate Limiters (Logowanie: 5/15min, Rejestracja: 5/10min)"]
     end
 
-    subgraph Pure_Domain ["Czysta Domena Biznesowa (Zero React/DOM)"]
-        Money["money.ts (Cents, toCents, formatPLN)"]
-        DomainCart["cart.ts (Obliczenia progu dostawy 200 zł)"]
-        Payment["payment.ts (Luhn, walidacja, maskowanie)"]
-        Schemas["schemas.ts (Zod, walidacja i migracja v1->v2)"]
-        ExportTxt["exportTxt.ts (Generator tabeli ASCII .txt)"]
-        DomainCatalog["catalog.ts (Katalog produktów)"]
+    subgraph Server_Functions ["Vercel Functions (Node.js na Fluid Compute / api/*)"]
+        ApiState["/api/state (GET stan, POST backup/reset)"]
+        ApiAdmin["/api/admin/login & /api/admin/session"]
+        ApiCategories["/api/categories (CRUD + reasumpcja)"]
+        ApiMigrate["/api/categories/migrate (Masowa migracja)"]
+        ApiProducts["/api/products (Walidacja cen groszowych i stanów)"]
+        ApiCustomers["/api/customers (Maskowanie PII, Honeypot, Usuwanie)"]
+        ApiOrders["/api/orders (Weryfikacja cen w katalogu, Zapis)"]
     end
 
-    subgraph Persistence ["Warstwa Pamięci Masowej (StorageAdapter)"]
-        Adapter["StorageAdapter (Interfejs)"]
-        IDB["IndexedDbStorageAdapter (idb-keyval)"]
-        LocalFallback["localStorage Fallback"]
-        Seed["seed.ts (Demo state)"]
+    subgraph Server_Domain ["Serwerowa Warstwa Biznesowa i Repozytorium (src/server/)"]
+        AuthModule["auth.ts (scryptSync + timingSafeEqual, signSessionCookie)"]
+        RepoInterface["ShopRepository (Interfejs domenowy)"]
+        NeonRepo["NeonShopRepository (@neondatabase/serverless)"]
+        InMemRepo["InMemoryShopRepository (Fallback testowy/lokalny)"]
+        DbModule["db.ts (Leniwa inicjalizacja getNeonSql + ensureSchemaAndSeed)"]
     end
 
-    UI_Presentation -->|Odczyt stanu i wywołanie akcji| Store
-    Store -->|Czyste reguły biznesowe| Pure_Domain
-    Store -->|Zapis i odczyt zwalidowanego stanu| Adapter
-    Adapter --> IDB
-    IDB -.->|Awaria lub brak IDB| LocalFallback
-    Adapter --> Seed
+    subgraph Data_Storage ["Baza Danych"]
+        NeonDB[("Neon Serverless Postgres\n- categories\n- products\n- customers\n- orders")]
+    end
+
+    Header --> AdminLogin
+    AdminLogin -->|POST /api/admin/login| ApiAdmin
+    UI_Public --> Store
+    UI_Admin --> Store
+    Store <--> IDB
+    Store -->|Żądania fetch /api/*| API_Gateway
+
+    API_Gateway --> CookieAuth
+    API_Gateway --> RateLimiters
+    CookieAuth --> Server_Functions
+    RateLimiters --> Server_Functions
+
+    Server_Functions --> AuthModule
+    Server_Functions --> RepoInterface
+
+    RepoInterface -->|Gdy DATABASE_URL jest zdefiniowany| NeonRepo
+    RepoInterface -->|Brak DATABASE_URL lub USE_IN_MEMORY_DB=true| InMemRepo
+
+    NeonRepo --> DbModule
+    DbModule --> NeonDB
 ```
 
 ---
 
-## 2. Struktura Katalogów i Podział Odpowiedzialności
+## 3. Struktura Katalogów i Odpowiedzialność
 
 ```text
-src/
-├── domain/        # Czysta logika biznesowa (brak importów z Reacta, DOM, window, storage)
-├── storage/       # Warstwa persystencji danych w przeglądarce
-├── store/         # Stan globalny aplikacji (Zustand)
-├── components/    # Reaktywne komponenty interfejsu użytkownika (React 19)
-├── styles/        # System stylów i zmiennych CSS (Retro CRT Design System)
-├── utils/         # Narzędzia pomocnicze (np. pobieranie plików w przeglądarce)
-├── App.tsx        # Główny komponent orkiestrujący panele i boot screen
-└── main.tsx       # Punkt wejścia aplikacji i montowanie w DOM
-tests/
-├── unit/          # Testy jednostkowe domeny, komponentów i adapterów (Vitest)
-├── integration/   # Testy integracyjne store + storage oraz UI (React Testing Library)
-└── e2e/           # Testy End-to-End w przeglądarce Chromium (Playwright + Axe A11y)
+Shopping_cart/
+├── api/                           # Bezserwerowe funkcje Vercel Functions (Web API)
+│   ├── admin/                     # Endpointy sesji i logowania administratora
+│   ├── categories/                # Endpointy kategorii oraz migracji asortymentu
+│   ├── customers.ts               # Endpointy bazy klientów (maskowanie PII, honeypot)
+│   ├── orders.ts                  # Endpointy składania i odczytu zamówień
+│   ├── products.ts                # Endpointy katalogu produktów (walidacja groszy)
+│   └── state.ts                   # Agregacja stanu startowego dla klienta
+├── scripts/                       # Skrypty narzędziowe i operacje bazodanowe
+│   ├── init-neon-db.mjs           # CLI: Inicjalizacja schematu tabel w Neon Postgres
+│   └── init-neon-db.ts            # Skrypt TypeScript do zasilania bazy
+├── src/
+│   ├── domain/                    # Czysta domena biznesowa (0 zależności DOM/React)
+│   │   ├── catalog.ts             # Dynamiczne kategorie, produkty, reasumpcja, migracja
+│   │   ├── customer.ts            # Walidacja Zod, honeypot, unikalność e-mail, maskowanie PII
+│   │   ├── money.ts               # Typ Cents, bezbłędny parser parsePlnInputToCents, formatPLN
+│   │   ├── cart.ts                # Koszyk, próg darmowej dostawy (200 zł), syncCartWithCatalog
+│   │   ├── payment.ts             # Algorytm Luhna, maskowanie kart (PCI-DSS), PayPal, Bitcoin
+│   │   ├── exportTxt.ts           # Generator retro raportu tekstowego ASCII .txt
+│   │   └── schemas.ts             # Schematy Zod dla stanu, walidacji API i backupów v1/v2/v3
+│   ├── server/                    # Warstwa serwerowa współdzielona z api/
+│   │   ├── auth.ts                # Autoryzacja scryptSync/timingSafeEqual, ciasteczka HMAC, limity
+│   │   ├── db.ts                  # Leniwe połączenie getNeonSql() i migracja schematu SQL
+│   │   ├── repository.ts          # Wzorzec repozytorium: NeonShopRepository + InMemoryShopRepository
+│   │   └── viteApiPlugin.ts       # Mostek Vite przekierowujący /api/* do handlerów serwerowych
+│   ├── components/                # Komponenty interfejsu użytkownika (React 19)
+│   │   ├── AdminLoginModal.tsx    # Modal autoryzacji administratora
+│   │   ├── AdminPanel.tsx         # Panel administracyjny (Kategorie, Produkty, Migracja, Klienci)
+│   │   ├── CatalogPanel.tsx       # Katalog z filtrami kategorii, stanami magazynowymi
+│   │   ├── CartPanel.tsx          # Panel koszyka z paskiem darmowej wysyłki
+│   │   ├── CustomersPanel.tsx     # Rejestracja klientów, maskowanie PII, honeypot
+│   │   ├── CheckoutPanel.tsx      # Kasa: Karta (bez CVV!), PayPal, Bitcoin
+│   │   ├── OrderHistoryPanel.tsx  # Tabela zamówień i eksport raportów ASCII
+│   │   ├── OrderDetailsModal.tsx  # Dostępny modal szczegółów zamówienia
+│   │   ├── HeaderBar.tsx          # Pasek systemowy z dostępem do panelu admina
+│   │   └── StatusBar.tsx          # Terminalowy pasek stanu (aria-live="polite")
+│   ├── storage/                   # Adaptery pamięci masowej przeglądarki (IndexedDB)
+│   ├── store/                     # Globalny stan aplikacji (Zustand + auto-synchronizacja)
+│   └── styles/                    # Tokens CSS, scanlines kineskopowe i responsywny grid
+├── tests/
+│   ├── e2e/                       # Testy Playwright E2E + audyt dostępności Axe A11y
+│   ├── integration/               # Testy integracyjne store, UI RTL i panelu admina
+│   └── unit/                      # Testy jednostkowe domeny, serwera, auth i bazy
+├── vercel.json                    # Konfiguracja Vercel: Fluid Compute + rewrites SPA
+└── vite.config.ts                 # Konfiguracja Vite ze zintegrowanym viteApiPlugin
 ```
-
-### Szczegółowy opis modułów:
-
-| Moduł | Odpowiedzialność | Kluczowe pliki |
-|---|---|---|
-| **`src/domain/`** | Reguły kalkulacji cen, operacji na koszyku, walidacji Luhna/CVV/PayPal/BTC, schematy Zod, eksport ASCII `.txt`. Czysty TypeScript bez zależności zewnętrznych poza biblioteką Zod. | `money.ts`, `cart.ts`, `catalog.ts`, `payment.ts`, `schemas.ts`, `exportTxt.ts` |
-| **`src/storage/`** | Abstrakcja warstwy persystencji. Odczyt i zapis stanu z IndexedDB (`idb-keyval`) z przezroczystym fallbackiem do `localStorage` oraz generowanie danych demonstracyjnych. | `adapter.ts`, `indexedDbAdapter.ts`, `inMemoryAdapter.ts`, `seed.ts` |
-| **`src/store/`** | Centralny magazyn stanu aplikacji zrealizowany w Zustand (`useShopStore`). Integruje domenę ze storage, udostępnia metody akcji dla komponentów UI i zapewnia auto-persystencję po każdej mutacji. | `useShopStore.ts`, `index.ts` |
-| **`src/components/`** | Dostępne komponenty terminalowe React 19: filtry, koszyk, dodawanie klientów, walidacja kasy, modal ze szczegółami, nagłówek z importem/eksportem oraz pasek statusu. | `CatalogPanel.tsx`, `CartPanel.tsx`, `CustomersPanel.tsx`, `CheckoutPanel.tsx`, `OrderHistoryPanel.tsx`, `OrderDetailsModal.tsx`, `HeaderBar.tsx`, `StatusBar.tsx` |
-| **`src/styles/`** | System stylów bazujący na zmiennych CSS (tokens), responsywnym CSS Grid oraz opcjonalnej warstwie kineskopowych efektów CRT FX (scanlines, winieta, glow). | `tokens.css`, `crt.css`, `layout.css`, `global.css`, `index.css` |
-| **`src/utils/`** | Funkcje pomocnicze niezwiązane z domeną, np. bezpieczne inicjowanie pobierania plików (`downloadTextFile`) przez dynamiczne tworzenie obiektów `Blob` i elementów kotwicy `<a>`. | `download.ts` |
 
 ---
 
-## 3. Finanse i Arytmetyka Groszy (`Cents`)
+## 4. Finanse i Arytmetyka Groszy (`Cents`)
 
-W aplikacjach finansowych stosowanie typu zmiennoprzecinkowego (`number` w JavaScript będący 64-bitowym floatem IEEE 754) prowadzi do katastrofalnych błędów zaokrągleń (np. `0.1 + 0.2 === 0.30000000000000004` lub niedokładności przy wielokrotnych sumowaniach).
+W aplikacjach finansowych stosowanie typu zmiennoprzecinkowego (`number` w JS, będącego 64-bitowym floatem IEEE 754) prowadzi do katastrofalnych błędów zaokrągleń (np. `0.1 + 0.2 === 0.30000000000000004`).
 
-W architekturze v2.0 wdrożono bezwzględną regułę **arytmetyki całkowitoliczbowej w groszach**:
+W architekturze v3.0 wdrożono rygorystyczny standard **arytmetyki całkowitoliczbowej w groszach**:
 - Wszystkie wartości pieniężne (ceny produktów, sumy koszyka, koszt dostawy, kwoty zamówień) są przechowywane i przeliczane jako liczby całkowite reprezentujące grosze (`integer Cents`).
-- Typ `Cents` jest typem brandowanym w TypeScript (`number & { readonly __brand: unique symbol }`), co zapobiega przypadkowemu przypisaniu surowej liczby bez jawnej konwersji pomocniczej `toCents(val)`.
-- **Konwersja ze starego formatu `float` (legacy):** odbywa się wyłącznie przy imporcie danych za pomocą bezpiecznego zaokrąglenia `Math.round(pln * 100)`.
-- **Prezentacja walutowa:** funkcja `formatPLN(cents)` formatuje grosze na czytelny łańcuch znaków (np. `20000` -> `200,00 zł`) wyłącznie w warstwie prezentacji.
-
-### Parametry logistyki i dostawy:
-- **Próg darmowej dostawy:** `20000` groszy (200,00 zł).
-- **Koszt dostawy poniżej progu:** `1500` groszy (15,00 zł).
-- **Kalkulacja kwoty do darmowej dostawy:** pole `amountToFreeDeliveryCents` zwraca `0` gdy subtotal osiągnie lub przekroczy 20 000 groszy, lub różnicę `20000 - subtotalCents` w przeciwnym razie. Gdy koszyk jest pusty, koszt dostawy wynosi `0 zł`.
-
----
-
-## 4. Bezpieczeństwo Płatności i Higiena PCI-DSS
-
-Aplikacja symuluje realizację transakcji z zachowaniem najwyższych standardów higieny bezpieczeństwa danych kartowych (zgodnie z duchem **PCI-DSS Level 1**):
-
-### 1. Kody CVV/CVC:
-- Kod CVV jest weryfikowany wyłącznie w pamięci operacyjnej podczas walidacji formularza w `CheckoutPanel` (oraz walidacji domenowej `validatePayment`).
-- **Kod CVV jest natychmiast odrzucany i czyszczony z pamięci.**
-- Nigdy nie jest przekazywany do modelu `Order`, store'a Zustand, bazy `IndexedDB`, `localStorage`, eksportu `data.json` ani tekstowego pliku `.txt`.
-
-### 2. Pełne numery kart płatniczych:
-- 16-cyfrowy numer karty przechodzi pełną weryfikację algorytmem Luhna (modulus 10) oraz sprawdzenie daty ważności (`MM/RR` nie starsza niż bieżący miesiąc).
-- Po pomyślnej walidacji numer karty jest natychmiast anonimizowany za pomocą funkcji `maskCardNumber` do postaci:
-  `**** **** **** 1234`
-- Wyłącznie zamaskowany ciąg oraz 4 ostatnie cyfry (`last4`) są utrwalane w zamówieniu (`SafePaymentInfo`).
-
-### 3. Alternatywne metody płatności:
-- **PayPal:** Walidacja formatu adresu e-mail za pomocą ścisłego wyrażenia regularnego.
-- **Bitcoin:** Walidacja poprawności adresu portfela w standardzie Base58 (legacy adresy rozpoczynające się od `1` lub `3`, długość 26–35 znaków) oraz Bech32 (natywne adresy SegWit rozpoczynające się od `bc1`, długość do 90 znaków). Wyliczanie ekwiwalentu w BTC w oparciu o stałą referencyjną `BTC_RATE_PLN = 400 000 zł`.
+- Typ `Cents` jest typem brandowanym w TypeScript (`number & { readonly __brand: unique symbol }`), uniemożliwiającym przypadkowe podstawienie surowej liczby bez jawnej konwersji pomocniczej `toCents(val)`.
+- **Parser wejścia użytkownika (`parsePlnInputToCents`):**
+  Parsuje ciągi tekstowe z formularza (np. `"149.99"`, `"149,99"`, `"200"`) bez użycia mnożenia floatów: rozbija ciąg regexem na złotówki i grosze, uzupełnia brakujące cyfry zerami i sumuje jako liczby całkowite:
+  $$\text{Cents} = (\text{złote} \times 100) + \text{grosze}$$
+  Odrzuca wartości ujemne, puste lub posiadające więcej niż dwa miejsca po przecinku.
+- **Konwersja z bazy Neon Postgres:**
+  W bazie SQL kolumny `price_cents`, `subtotal_cents`, `delivery_cents`, `total_cents` posiadają typ `INTEGER`, gwarantując spójność z domeną TypeScript.
+- **Prezentacja walutowa:** Funkcja `formatPLN(cents)` formatuje kwotę (np. `20000` -> `200,00 zł`) wyłącznie w warstwie prezentacji UI.
 
 ---
 
-## 5. Warstwa Persystencji (Storage) i Migracja Danych
+## 5. Warstwa Backendowa Vercel Functions (`/api/*` na Fluid Compute)
 
-```mermaid
-classDiagram
-    class StorageAdapter {
-        <<interface>>
-        +loadState() Promise~PersistedShopState | null~
-        +saveState(state: PersistedShopState) Promise~void~
-        +clearState() Promise~void~
-    }
+Backend aplikacji opiera się na **Vercel Functions** zoptymalizowanych pod kątem technologii **Fluid Compute**:
+- Każdy plik w katalogu `api/` eksportuje nazwane funkcje obsługujące metody HTTP (`GET`, `POST`, `PUT`, `DELETE`).
+- Handlery operują na natywnych standardach Web API: `Request` oraz `Response`, co czyni je w pełni przenośnymi.
+- **Zintegrowany plugin lokalny (`viteApiPlugin`):**
+  W środowisku lokalnym (`npm run dev` i `npm run preview`) Vite używa lekkiego middleware'a, który tłumaczy obiekty Node.js `IncomingMessage` i `ServerResponse` na standardowe Web API `Request` i `Response`, przekazuje je do handlerów w `api/` i odsyła nagłówki (w tym `Set-Cookie`). Dzięki temu środowisko deweloperskie i testy Playwright E2E działają identycznie jak w chmurze Vercel bez emulacji zewnętrznych serwerów!
 
-    class IndexedDbStorageAdapter {
-        -key: string
-        +loadState() Promise~PersistedShopState | null~
-        +saveState(state: PersistedShopState) Promise~void~
-        +clearState() Promise~void~
-    }
+---
 
-    class InMemoryStorageAdapter {
-        -state: PersistedShopState | null
-        +loadState() Promise~PersistedShopState | null~
-        +saveState(state: PersistedShopState) Promise~void~
-        +clearState() Promise~void~
-    }
+## 6. Wzorzec Dual-Mode Repository
 
-    StorageAdapter <|.. IndexedDbStorageAdapter
-    StorageAdapter <|.. InMemoryStorageAdapter
+Architektura warstwy danych opiera się na wzorcu repozytorium zdefiniowanym przez interfejs `ShopRepository`:
+
+```typescript
+export interface ShopRepository {
+  getState(isAdmin: boolean): Promise<ShopStatePayload>;
+  getCategories(): Promise<Category[]>;
+  createCategory(input: CreateCategoryInput): Promise<Category>;
+  updateCategory(id: string, patch: UpdateCategoryInput): Promise<Category>;
+  deleteCategory(id: string, targetCategoryId?: string): Promise<void>;
+  migrateProducts(sourceCategoryId: string, targetCategoryId: string, productIds?: string[]): Promise<number>;
+  getProducts(): Promise<Product[]>;
+  createProduct(input: CreateProductInput): Promise<Product>;
+  updateProduct(id: string, patch: UpdateProductInput): Promise<Product>;
+  deleteProduct(id: string): Promise<void>;
+  getCustomers(isAdmin: boolean): Promise<Customer[]>;
+  createCustomer(input: RegisterCustomerInput): Promise<Customer>;
+  deleteCustomer(id: string): Promise<void>;
+  getOrders(): Promise<Order[]>;
+  createOrder(input: CreateOrderInput): Promise<Order>;
+  deleteOrder(id: string): Promise<void>;
+  resetDemo(): Promise<void>;
+  importState(state: PersistedShopState): Promise<void>;
+}
 ```
 
-### Mechanizm zapisu i fallback:
-1. Podstawową technologią pamięci masowej w przeglądarce jest **IndexedDB**, obsługiwana za pośrednictwem biblioteki `idb-keyval`.
-2. Przy próbie zapisu lub odczytu adapter sprawdza dostępność IndexedDB (`isIndexedDbAvailable()`). W przypadku zablokowania IndexedDB (np. w restrykcyjnych trybach incognito, sandboxed iframes) adapter automatycznie i bezgłośnie przełącza się na `localStorage`.
-3. Przy każdym odczycie dane poddawane są ścisłej walidacji za pomocą schematu Zod `PersistedShopStateSchema`. Jeśli dane w pamięci podręcznej są uszkodzone, system bezpiecznie ładuje stan demonstracyjny (`seed.ts`).
-
-### Migracja formatu Legacy (`data.json`):
-Funkcja `parseLegacyOrCurrentBackup(jsonString)` w `src/domain/schemas.ts` umożliwia bezproblemowy import zarówno nowoczesnego backupu v2, jak i historycznego pliku `data.json` generowanego przez klienta Tkinter v1:
-- Ceny i sumy zapisane w formacie `float` (np. `79.99`) są automatycznie przeliczane na grosze: `toCents(Math.round(pln * 100))`.
-- Niezamaskowane numery kart ze starych baz są poddawane natychmiastowej masce `**** **** **** 1234`.
-- Ewentualne jawne pola `cvv` obecne w historycznych plikach są usuwane.
-
-### Niezależność relacji Klient — Zamówienie:
-W modelu relacyjnym usunięcie klienta mogłoby spowodować kaskadowe usunięcie lub błędy kluczy obcych w historii zamówień. W architekturze v2 zastosowano wzorzec **Customer Snapshot**:
-- Każde zamówienie (`Order`) przechowuje wewnątrz własny niezależny obiekt klienta (`customer: { id, name, email }`) z momentu zakupu.
-- Dzięki temu usunięcie klienta z listy w panelu klientów nie narusza integralności ani czytelności historycznych zamówień.
+### Implementacje:
+1. **`NeonShopRepository`:**
+   - Wykorzystywana automatycznie w środowisku z obecną zmienną `DATABASE_URL`.
+   - Realizuje operacje bazodanowe w chmurze Neon Postgres za pomocą bezpiecznych szablonów zapytań SQL (`sql` tagged template) zapobiegających SQL Injection.
+   - Weryfikuje i automatycznie inicjalizuje schemat tabel (`ensureSchemaAndSeed()`) przy pierwszym połączeniu.
+2. **`InMemoryShopRepository`:**
+   - Wykorzystywana, gdy zmienna `DATABASE_URL` nie jest zdefiniowana lub ustawiono `USE_IN_MEMORY_DB=true`.
+   - Zapewnia 100% determinizm, szybkość i brak zależności sieciowych w testach jednostkowych (Vitest), środowisku CI GitHub Actions oraz lokalnym podglądzie offline.
 
 ---
 
-## 6. Architektura UI Retro CRT i Dostępność (WCAG AA)
+## 7. Bezpieczeństwo Sesji Administracyjnej i Anty-Spam
 
-### Design System i Paleta Barw:
-Interfejs bazuje na estetyce monochromatycznych zielonych monitorów terminalowych (P1 phosphor):
-- **Tło główne:** `#0b0f0b` (głęboka czerń terminalowa)
-- **Panele i sekcje:** `#0f1a10`
-- **Tekst główny:** `#21f35a` (jasna zieleń luminoforu)
-- **Akcenty i aktywne kontrolki:** `#00ff66`
-- **Ostrzeżenia i alerty:** `#ffb000` (bursztyn)
-- **Błędy:** `#ff4d4d` (karminowy)
-- **Typografia:** Rodzina czcionek o stałej szerokości znaku (`Courier New`, `Fira Code`, `monospace`).
+### Serwerowa autoryzacja hasłem:
+- Weryfikacja hasła administratora odbywa się wyłącznie na backendzie w `api/admin/login.ts`.
+- Wykorzystuje kryptograficzną funkcję derywacji klucza `node:crypto` (`scryptSync`) z solą serwerową oraz porównanie w czasie stałym `crypto.timingSafeEqual`, co całkowicie eliminuje podatność na ataki typu timing attack.
+- Hasło administratora pobierane jest ze zmiennej `ADMIN_PASSWORD`. W środowisku produkcyjnym brak zmiennej rzuca błąd konfiguracji (brak domyślnych haseł na produkcji!).
 
-### Warstwa CRT FX:
-- Efekty scanlines (poziome linie kineskopu) oraz poświata (glow) tekstu i kontenerów są realizowane w pliku `src/styles/crt.css` za pomocą pseudoelementów `::before` i `::after` z `pointer-events: none`.
-- Użytkownik może w każdej chwili wyłączyć efekty przełącznikiem `[CRT FX: ON/OFF]` na pasku nagłówka. Ustawienie to jest natychmiast utrwalane w konfiguracji aplikacji (`settings.crtFx`).
-- **Obsługa preferencji dostępności:** Aplikacja automatycznie wyłącza animacje i poświaty oraz zmniejsza kontrast scanlines w reakcji na regułę CSS:
-  ```css
-  @media (prefers-reduced-motion: reduce) { ... }
-  ```
+### Podpisany token sesji w ciasteczku `HttpOnly`:
+- Po udanym logowaniu serwer generuje podpisany kryptograficznie token HMAC-SHA256 z wykorzystaniem klucza `ADMIN_SESSION_SECRET`.
+- Token przesyłany jest w nagłówku `Set-Cookie` z rygorystycznymi atrybutami bezpieczeństwa:
+  - `HttpOnly`: uniemożliwia odczyt tokenu przez jakikolwiek skrypt JavaScript (ochrona przed kradzieżą sesji przez XSS).
+  - `SameSite=Strict`: uniemożliwia dołączenie ciasteczka w żądaniach cross-site (ochrona przed CSRF).
+  - `Path=/`: token jest ważny w obrębie całej domeny aplikacji.
+  - `Max-Age=7200`: ważność sesji ograniczona do 2 godzin.
 
-### Standardy Dostępności (WCAG AA):
-- Pełna obsługa klawiatury: logiczna kolejność tabulacji, wyraźne i kontrastowe wskaźniki fokusu (`:focus-visible`).
-- Modal szczegółów zamówienia wyposażony w pułapkę fokusu, możliwość zamknięcia klawiszem `Esc` oraz poprawne atrybuty `role="dialog"`, `aria-modal="true"` i `aria-labelledby`.
-- Dolny pasek statusu terminala posiada semantyczny atrybut `role="status"` oraz `aria-live="polite"`, dzięki czemu czytniki ekranu informują użytkownika o zmianach stanu bez przerywania bieżącej lektury.
-- Zgodność potwierdzona automatycznym audytem biblioteki `@axe-core/playwright` (zero naruszeń o statusie `critical` i `serious`).
+### Ochrona przed atakami brute-force:
+- Serwerowy limiter `checkRateLimit()` monitoruje próby logowania administratora: maksymalnie 5 błędnych prób w oknie 15 minut z danego adresu IP/sesji skutkuje kodem HTTP `429 Too Many Requests`.
 
 ---
 
-## 7. Strategia Testów i Weryfikacja Jakości
+## 8. Dynamiczny Katalog i Masowa Migracja Produktów
 
-Projekt stosuje rygorystyczną piramidę testów:
-
-```text
-               /\
-              /  \     E2E Tests (10 scenariuszy Playwright)
-             /    \    - Prawdziwa przeglądarka Chromium na buildzie produkcyjnym
-            /------\   - Skan dostępności @axe-core/playwright, reload, eksport .txt
-           /        \
-          /----------\  Integration Tests (Vitest + RTL + Zustand)
-         /            \ - Integracja store + storage, testy komponentów UI
-        /--------------\
-       /                \ Unit Tests (Vitest)
-      /------------------\- Czysta domena: money, cart, payment, schemas, exportTxt
-```
-
-- **Unit tests:** 203 testy jednostkowe i integracyjne Vitest w 25 plikach testowych.
-- **Pokrycie kodu (Code Coverage v8):**
-  - Warstwa domenowa (`src/domain/`): **> 98%** linii kodu.
-  - Całość aplikacji (`src/`): **> 96%** linii kodu.
-- **Testy E2E (Playwright):** 10 scenariuszy uruchamianych na produkcyjnym serwerze `vite preview` pod ścieżką `/Shopping_cart/`:
-  1. Ładowanie aplikacji pod `/Shopping_cart/` bez błędów konsoli i błędnych statusów HTTP (zero 404).
-  2. Wyszukiwanie, filtrowanie i dodawanie pozycji do koszyka.
-  3. Dynamiczna zmiana kosztu dostawy (`15.00 zł` -> `GRATIS` po przekroczeniu `200.00 zł`).
-  4. Dodawanie, wybór i bezpieczne usuwanie klienta bez niszczenia zamówień.
-  5. Walidacja negatywna i pozytywna 3 metod płatności, maskowanie kart i weryfikacja braku CVV.
-  6. Odporność i trwałość zamówień w IndexedDB po odświeżeniu strony (`page.reload()`).
-  7. Zamknięcie modala klawiszem `Esc` oraz weryfikacja pobranego raportu ASCII `.txt`.
-  8. Eksport i import pliku kopii zapasowej JSON.
-  9. Persystencja przełącznika `CRT FX` oraz brak poziomego scrolla na widoku mobilnym (`390x844`).
-  10. Skan dostępności axe-core w widoku głównym i oknie modalnym.
+- **Gwarancja integralności (Invariable Default Category):**
+  System posiada wbudowaną, niezmienną kategorię domyślną:
+  `{ id: 'cat-default', name: 'Ogólne', isDefault: true }`.
+  Próba usunięcia tej kategorii zwraca błąd walidacji domenowej `400 Bad Request`.
+- **Automatyczna reasumpcja:**
+  Przy usuwaniu dowolnej innej kategorii, repozytorium automatycznie aktualizuje wszystkie przypisane do niej produkty, reasumpując je do kategorii domyślnej `cat-default` (lub wskazanej `targetCategoryId`).
+- **Masowa migracja produktów (`POST /api/categories/migrate`):**
+  Umożliwia jednoczesne przeniesienie listy produktów ze wskazanej kategorii źródłowej do docelowej. Operacja na poziomie bazy SQL aktualizuje jednocześnie pola `category_id` oraz denormalizowaną nazwę `category`.
 
 ---
 
-## 8. CI/CD i Infrastruktura Wdrożeniowa
+## 9. Ochrona Prywatności Klientów (PII Hygiene) i Anty-Spam
 
-- **Platforma hostingowa:** GitHub Pages (`base: '/Shopping_cart/'`).
-- **Workflow GitHub Actions:** `.github/workflows/ci-deploy.yml`:
-  - **Job `verify`:** Uruchamiany przy każdym `push` i `pull_request` do gałęzi `master`/`main`. Wykonuje pełny łańcuch weryfikacyjny:
-    `npm ci` ➔ `npm run lint` ➔ `npm run format:check` ➔ `npm run typecheck` ➔ `npm run test:coverage` ➔ `npx playwright install chromium` ➔ `npm run test:e2e` ➔ `npm run build`.
-  - **Job `deploy`:** Uruchamiany automatycznie po zakończeniu sukcesem joba `verify` (wyłącznie na gałęzi produkcyjnej), wdrażający skompilowany katalog `dist/` do GitHub Pages za pomocą akcji `actions/deploy-pages@v4`.
-- **Obsługa routingu:** Plik `public/404.html` ze skryptem przekierowującym SPA zapobiega problemom ze statycznym serwowaniem podstron na GitHub Pages.
+- **Publiczne maskowanie danych osobowych:**
+  W widoku publicznym sklepu e-maile klientów są maskowane przez funkcję domenową `maskCustomerEmail`:
+  `jan.kowalski@example.com` $\rightarrow$ `j***i@example.com`.
+  Pełne dane klientów są udostępniane przez endpoint `GET /api/customers` **wyłącznie wtedy, gdy żądanie zawiera ważne ciasteczko sesji zalogowanego administratora**.
+- **Przeniesienie akcji destrukcyjnych:**
+  W publicznym komponencie `CustomersPanel` usunięto przycisk `USUŃ`. Usunięcie klienta (`DELETE /api/customers?id=...`) wymaga autoryzacji administratora; żądanie od niezalogowanego użytkownika zwraca kod `401 Unauthorized`.
+- **Zabezpieczenie przed botami (Honeypot):**
+  Formularz dodawania klienta zawiera niewidoczne dla człowieka pole `companyWebsite` (`tabIndex={-1}`, `aria-hidden="true"`, ukryte w stylach CSS). Wypełnienie tego pola przez automatycznego bota powoduje natychmiastowe odrzucenie żądania.
+- **Unikalność e-maili i Rate Limiting:**
+  System blokuje rejestrację zduplikowanych e-maili (`409 Conflict`) oraz ogranicza liczbę rejestracji do maksymalnie 5 na 10 minut na klienta (`429 Too Many Requests`).
+
+---
+
+## 10. Bezpieczeństwo Płatności i Standard PCI-DSS
+
+- **Brak utrwalania kodów CVV/CVC:**
+  Kod CVV weryfikowany jest wyłącznie w ulotnym stanie formularza React i nigdy nie trafia do modeli domenowych `Order`, bazy Neon Postgres, IndexedDB, plików backupu `data.json` ani raportów tekstowych `.txt`.
+- **Maskowanie numerów kart kredytowych:**
+  Po weryfikacji algorytmem Luhna numer karty jest nieodwracalnie anonimizowany do maski: `**** **** **** 1234`.
+- **Weryfikacja cen po stronie serwera:**
+  Podczas składania zamówienia (`POST /api/orders`) serwer pobiera aktualne ceny produktów bezpośrednio z bazy danych katalogu, uniemożliwiając manipulację kwotami w koszyku przez klienta w przeglądarce.
+
+---
+
+## 11. Architektura Testów i Zapewnienie Jakości
+
+Projekt posiada trójwarstwową piramidę testów:
+1. **Testy jednostkowe (Vitest):**
+   - Warstwa domenowa (`src/domain/`): pokrycie > 98%.
+   - Warstwa serwerowa (`src/server/`): testy autoryzacji, ciasteczek, repozytoriów i rate-limitingu.
+2. **Testy integracyjne (React Testing Library + Vitest):**
+   - Testy integracji komponentów UI (`AdminPanel`, `CustomersPanel`, `CatalogPanel`, `CartPanel`) ze stanem Zustand i operacjami domenowymi.
+3. **Testy End-to-End (Playwright):**
+   - Testowanie kompletnego przepływu na produkcyjnym serwerze preview: logowanie administratora, tworzenie kategorii, dodawanie produktów, masowa migracja, zakup towarów, weryfikacja zabezpieczeń API oraz audyt dostępności `@axe-core/playwright` (0 błędów krytycznych i poważnych).

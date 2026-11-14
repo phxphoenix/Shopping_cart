@@ -216,18 +216,18 @@ describe('domain/catalog', () => {
         expect(() => addCategoryToList(DEFAULT_CATEGORIES, { name: 'A' })).toThrow(
           /od 2 do 50 znaków/
         );
-        expect(() =>
-          addCategoryToList(DEFAULT_CATEGORIES, { name: 'a'.repeat(51) })
-        ).toThrow(/od 2 do 50 znaków/);
+        expect(() => addCategoryToList(DEFAULT_CATEGORIES, { name: 'a'.repeat(51) })).toThrow(
+          /od 2 do 50 znaków/
+        );
       });
 
       it('rejects duplicate category names case-insensitively', () => {
-        expect(() =>
-          addCategoryToList(DEFAULT_CATEGORIES, { name: 'elektronika' })
-        ).toThrow(/już istnieje/);
-        expect(() =>
-          addCategoryToList(DEFAULT_CATEGORIES, { name: '  OGÓLNE  ' })
-        ).toThrow(/już istnieje/);
+        expect(() => addCategoryToList(DEFAULT_CATEGORIES, { name: 'elektronika' })).toThrow(
+          /już istnieje/
+        );
+        expect(() => addCategoryToList(DEFAULT_CATEGORIES, { name: '  OGÓLNE  ' })).toThrow(
+          /już istnieje/
+        );
       });
 
       it('rejects duplicate category IDs', () => {
@@ -560,17 +560,12 @@ describe('domain/catalog', () => {
 
     describe('updateProductInList / updateProduct', () => {
       it('updates product fields and synchronizes category name when categoryId changes', () => {
-        const updated = updateProductInList(
-          DEFAULT_CATALOG,
-          DEFAULT_CATEGORIES,
-          'prod-laptop',
-          {
-            name: 'Laptop Retro Pro',
-            categoryId: 'cat-retro-hardware',
-            priceCents: toCents(399999),
-            stockQuantity: 7,
-          }
-        );
+        const updated = updateProductInList(DEFAULT_CATALOG, DEFAULT_CATEGORIES, 'prod-laptop', {
+          name: 'Laptop Retro Pro',
+          categoryId: 'cat-retro-hardware',
+          priceCents: toCents(399999),
+          stockQuantity: 7,
+        });
 
         const prod = updated.find((p) => p.id === 'prod-laptop');
         expect(prod?.name).toBe('Laptop Retro Pro');
@@ -581,12 +576,9 @@ describe('domain/catalog', () => {
       });
 
       it('automatically sets inStock: false when updated stockQuantity reaches 0', () => {
-        const updated = updateProduct(
-          DEFAULT_CATALOG,
-          DEFAULT_CATEGORIES,
-          'prod-laptop',
-          { stockQuantity: 0 }
-        );
+        const updated = updateProduct(DEFAULT_CATALOG, DEFAULT_CATEGORIES, 'prod-laptop', {
+          stockQuantity: 0,
+        });
 
         const prod = updated.find((p) => p.id === 'prod-laptop');
         expect(prod?.stockQuantity).toBe(0);
@@ -594,12 +586,9 @@ describe('domain/catalog', () => {
       });
 
       it('allows manually setting inStock: false while stock is positive', () => {
-        const updated = updateProduct(
-          DEFAULT_CATALOG,
-          DEFAULT_CATEGORIES,
-          'prod-laptop',
-          { inStock: false }
-        );
+        const updated = updateProduct(DEFAULT_CATALOG, DEFAULT_CATEGORIES, 'prod-laptop', {
+          inStock: false,
+        });
 
         const prod = updated.find((p) => p.id === 'prod-laptop');
         expect(prod?.inStock).toBe(false);
@@ -622,12 +611,9 @@ describe('domain/catalog', () => {
       });
 
       it('allows updating custom category string directly', () => {
-        const updated = updateProductInList(
-          DEFAULT_CATALOG,
-          DEFAULT_CATEGORIES,
-          'prod-laptop',
-          { category: 'Hardware Przenośny' }
-        );
+        const updated = updateProductInList(DEFAULT_CATALOG, DEFAULT_CATEGORIES, 'prod-laptop', {
+          category: 'Hardware Przenośny',
+        });
         const prod = updated.find((p) => p.id === 'prod-laptop');
         expect(prod?.category).toBe('Hardware Przenośny');
       });

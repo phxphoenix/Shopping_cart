@@ -263,7 +263,9 @@ export function AdminPanel() {
   // Tab 3 Handlers: Migration
   // ===========================================================================
   const sourceProducts = catalog.filter(
-    (p) => p.categoryId === migrateSourceCatId || p.category === categories.find((c) => c.id === migrateSourceCatId)?.name
+    (p) =>
+      p.categoryId === migrateSourceCatId ||
+      p.category === categories.find((c) => c.id === migrateSourceCatId)?.name
   );
 
   const handleSourceCatChange = (newSourceId: string) => {
@@ -356,7 +358,11 @@ export function AdminPanel() {
       {/* Nagłówek Panelu Admina */}
       <div className="panel-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <h2 id="admin-panel-title" className="panel-title" style={{ color: 'var(--text-bright)' }}>
+          <h2
+            id="admin-panel-title"
+            className="panel-title"
+            style={{ color: 'var(--text-bright)' }}
+          >
             // SEKCJA ADMINISTRACYJNA // TRYB UPRAWNIONY
           </h2>
           <span className="badge badge-accent">[ADMIN ROOT]</span>
@@ -404,7 +410,8 @@ export function AdminPanel() {
           onClick={() => setActiveTab('categories')}
           style={{ padding: '0.35rem 0.85rem' }}
         >
-          {activeTab === 'categories' ? '&gt; [1] KATEGORIE' : '[1] KATEGORIE'} ({categories.length})
+          {activeTab === 'categories' ? '&gt; [1] KATEGORIE' : '[1] KATEGORIE'} ({categories.length}
+          )
         </button>
 
         <button
@@ -581,11 +588,11 @@ export function AdminPanel() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <strong style={{ color: 'var(--text-bright)' }}>{cat.name}</strong>
-                        {cat.isDefault && (
-                          <span className="badge badge-accent">[DOMYŚLNA]</span>
-                        )}
+                        {cat.isDefault && <span className="badge badge-accent">[DOMYŚLNA]</span>}
                         <span className="badge badge-warning">ID: {cat.id}</span>
-                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                        <span
+                          style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}
+                        >
                           ({assignedCount} {assignedCount === 1 ? 'produkt' : 'produktów'})
                         </span>
                       </div>
@@ -735,7 +742,9 @@ export function AdminPanel() {
               }}
             >
               <span>
-                {editingProductId ? `// EDYCJA PRODUKTU (ID: ${editingProductId})` : '// + NOWY PRODUKT W KATALOGU'}
+                {editingProductId
+                  ? `// EDYCJA PRODUKTU (ID: ${editingProductId})`
+                  : '// + NOWY PRODUKT W KATALOGU'}
               </span>
               {editingProductId && (
                 <button
@@ -795,7 +804,8 @@ export function AdminPanel() {
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name}{c.isDefault ? ' [DOMYŚLNA]' : ''}
+                      {c.name}
+                      {c.isDefault ? ' [DOMYŚLNA]' : ''}
                     </option>
                   ))}
                 </select>
@@ -829,14 +839,29 @@ export function AdminPanel() {
                 />
               </div>
 
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
+              <div
+                className="form-group"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  marginTop: '1.25rem',
+                }}
+              >
                 <input
                   id="prod-instock-checkbox"
                   type="checkbox"
                   checked={prodInStock}
                   onChange={(e) => setProdInStock(e.target.checked)}
                 />
-                <label htmlFor="prod-instock-checkbox" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-bright)', cursor: 'pointer' }}>
+                <label
+                  htmlFor="prod-instock-checkbox"
+                  style={{
+                    fontSize: 'var(--font-size-xs)',
+                    color: 'var(--text-bright)',
+                    cursor: 'pointer',
+                  }}
+                >
                   Dostępny w sprzedaży (inStock)
                 </label>
               </div>
@@ -962,7 +987,12 @@ export function AdminPanel() {
                 }}
               >
                 <thead>
-                  <tr style={{ backgroundColor: 'var(--bg-panel-header)', borderBottom: '1px solid var(--border-dim)' }}>
+                  <tr
+                    style={{
+                      backgroundColor: 'var(--bg-panel-header)',
+                      borderBottom: '1px solid var(--border-dim)',
+                    }}
+                  >
                     <th style={{ padding: '0.5rem' }}>SKU</th>
                     <th style={{ padding: '0.5rem' }}>NAZWA</th>
                     <th style={{ padding: '0.5rem' }}>KATEGORIA</th>
@@ -994,9 +1024,7 @@ export function AdminPanel() {
                       <td style={{ padding: '0.5rem', color: 'var(--text-bright)' }}>
                         {formatPLN(product.priceCents)}
                       </td>
-                      <td style={{ padding: '0.5rem' }}>
-                        {product.stockQuantity} szt.
-                      </td>
+                      <td style={{ padding: '0.5rem' }}>{product.stockQuantity} szt.</td>
                       <td style={{ padding: '0.5rem' }}>
                         {product.inStock && product.stockQuantity > 0 ? (
                           <span style={{ color: 'var(--accent)' }}>[W SPRZEDAŻY]</span>
@@ -1051,12 +1079,21 @@ export function AdminPanel() {
               marginBottom: '1rem',
             }}
           >
-            <div style={{ fontWeight: 'bold', color: 'var(--text-bright)', marginBottom: '0.5rem' }}>
+            <div
+              style={{ fontWeight: 'bold', color: 'var(--text-bright)', marginBottom: '0.5rem' }}
+            >
               // MASOWA MIGRACJA PRODUKTÓW MIĘDZY KATEGORIAMI
             </div>
-            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)', margin: '0 0 1rem 0' }}>
-              Wybierz kategorię źródłową oraz docelową, a następnie zaznacz produkty, które mają zostać
-              przeniesione. Migracja automatycznie zaktualizuje powiązania w bazie danych i koszyku.
+            <p
+              style={{
+                fontSize: 'var(--font-size-xs)',
+                color: 'var(--text-muted)',
+                margin: '0 0 1rem 0',
+              }}
+            >
+              Wybierz kategorię źródłową oraz docelową, a następnie zaznacz produkty, które mają
+              zostać przeniesione. Migracja automatycznie zaktualizuje powiązania w bazie danych i
+              koszyku.
             </p>
 
             <div
@@ -1105,7 +1142,8 @@ export function AdminPanel() {
                     .filter((c) => c.id !== migrateSourceCatId)
                     .map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name}{c.isDefault ? ' [DOMYŚLNA]' : ''}
+                        {c.name}
+                        {c.isDefault ? ' [DOMYŚLNA]' : ''}
                       </option>
                     ))}
                 </select>
@@ -1126,7 +1164,8 @@ export function AdminPanel() {
               }}
             >
               <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-bright)' }}>
-                Produkty w kategorii źródłowej: ({sourceProducts.length}) | Zaznaczono: ({selectedProductIds.size})
+                Produkty w kategorii źródłowej: ({sourceProducts.length}) | Zaznaczono: (
+                {selectedProductIds.size})
               </div>
 
               <div style={{ display: 'flex', gap: '0.35rem' }}>
@@ -1219,9 +1258,7 @@ export function AdminPanel() {
                       ? 'var(--border-bright)'
                       : 'var(--border-error)'
                   }`,
-                  color: migrationStatus.startsWith('SUKCES')
-                    ? 'var(--accent)'
-                    : 'var(--error)',
+                  color: migrationStatus.startsWith('SUKCES') ? 'var(--accent)' : 'var(--error)',
                   fontSize: 'var(--font-size-xs)',
                   marginBottom: '1rem',
                 }}
@@ -1276,7 +1313,8 @@ export function AdminPanel() {
               />
             </div>
             <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
-              Razem klientów w bazie: <strong style={{ color: 'var(--text-bright)' }}>{customers.length}</strong>
+              Razem klientów w bazie:{' '}
+              <strong style={{ color: 'var(--text-bright)' }}>{customers.length}</strong>
             </div>
           </div>
 
@@ -1325,7 +1363,13 @@ export function AdminPanel() {
                         <strong style={{ color: 'var(--text-bright)' }}>{customer.name}</strong>
                         <span className="badge">ID: {customer.id}</span>
                       </div>
-                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                      <div
+                        style={{
+                          fontSize: 'var(--font-size-xs)',
+                          color: 'var(--text-primary)',
+                          marginTop: '0.15rem',
+                        }}
+                      >
                         E-mail: <span style={{ color: 'var(--accent)' }}>{customer.email}</span>
                       </div>
                       <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>

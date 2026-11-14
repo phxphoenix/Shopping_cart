@@ -111,7 +111,10 @@ export class ShopApiClient {
       }
 
       const errorMsg =
-        parsed && typeof parsed === 'object' && 'error' in parsed && typeof parsed.error === 'string'
+        parsed &&
+        typeof parsed === 'object' &&
+        'error' in parsed &&
+        typeof parsed.error === 'string'
           ? parsed.error
           : typeof parsed === 'string' && parsed.length > 0
             ? parsed
@@ -210,13 +213,10 @@ export class ShopApiClient {
   async migrateCategoryProducts(
     input: MigrateProductsApiInput
   ): Promise<ApiResult<{ success: boolean; migratedCount: number }>> {
-    return this.request<{ success: boolean; migratedCount: number }>(
-      '/api/categories/migrate',
-      {
-        method: 'POST',
-        body: JSON.stringify(input),
-      }
-    );
+    return this.request<{ success: boolean; migratedCount: number }>('/api/categories/migrate', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
   }
 
   // Products
@@ -239,10 +239,13 @@ export class ShopApiClient {
   }
 
   async deleteProduct(id: string): Promise<ApiResult<{ deletedProductId: string }>> {
-    return this.request<{ deletedProductId: string }>(`/api/products?id=${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-      body: JSON.stringify({ id }),
-    });
+    return this.request<{ deletedProductId: string }>(
+      `/api/products?id=${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ id }),
+      }
+    );
   }
 
   // Customers

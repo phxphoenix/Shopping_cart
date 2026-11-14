@@ -64,7 +64,9 @@ describe('CustomersPanel UI Integration', () => {
 
     // Verify information note is present
     expect(
-      screen.getByText(/Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym/i)
+      screen.getByText(
+        /Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym/i
+      )
     ).toBeInTheDocument();
   });
 
@@ -168,9 +170,7 @@ describe('CustomersPanel UI Integration', () => {
     await user.click(submitBtn);
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(
-      screen.getByText(/cyfry i znaki specjalne są niedozwolone/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/cyfry i znaki specjalne są niedozwolone/i)).toBeInTheDocument();
     expect(useShopStore.getState().customers).toHaveLength(2);
 
     // HTML / XSS tags in name
@@ -179,9 +179,7 @@ describe('CustomersPanel UI Integration', () => {
     await user.click(submitBtn);
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(
-      screen.getByText(/cyfry i znaki specjalne są niedozwolone/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/cyfry i znaki specjalne są niedozwolone/i)).toBeInTheDocument();
     expect(useShopStore.getState().customers).toHaveLength(2);
   });
 

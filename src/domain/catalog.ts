@@ -221,7 +221,9 @@ export function filterByCategory(
   if (category === 'ALL' || !category) {
     return [...catalog];
   }
-  return catalog.filter((product) => product.category === category || product.categoryId === category);
+  return catalog.filter(
+    (product) => product.category === category || product.categoryId === category
+  );
 }
 
 /**
@@ -270,9 +272,7 @@ export function addCategoryToList(
     throw new Error('Nazwa kategorii musi zawierać od 2 do 50 znaków.');
   }
 
-  const isDuplicate = categories.some(
-    (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
-  );
+  const isDuplicate = categories.some((c) => c.name.toLowerCase() === trimmedName.toLowerCase());
   if (isDuplicate) {
     throw new Error(`Kategoria o nazwie "${trimmedName}" już istnieje.`);
   }
@@ -482,9 +482,7 @@ export function addProductToList(
     throw new Error('Kod SKU produktu jest wymagany.');
   }
 
-  const duplicateSku = products.some(
-    (p) => p.sku.toLowerCase() === trimmedSku.toLowerCase()
-  );
+  const duplicateSku = products.some((p) => p.sku.toLowerCase() === trimmedSku.toLowerCase());
   if (duplicateSku) {
     throw new Error(`Produkt o kodzie SKU "${trimmedSku}" już istnieje.`);
   }
@@ -630,10 +628,7 @@ export function updateProductInList(
 
 export const updateProduct = updateProductInList;
 
-export function deleteProductFromList(
-  products: readonly Product[],
-  productId: string
-): Product[] {
+export function deleteProductFromList(products: readonly Product[], productId: string): Product[] {
   const existing = products.find((p) => p.id === productId);
   if (!existing) {
     throw new Error(`Produkt o identyfikatorze "${productId}" nie istnieje.`);

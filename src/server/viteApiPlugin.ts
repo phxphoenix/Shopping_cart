@@ -174,6 +174,7 @@ export function viteApiPlugin(basePath = '/'): Plugin {
   return {
     name: 'vite-plugin-retro-crt-api',
     configureServer(server: ViteDevServer) {
+      process.env.ALLOW_DEFAULT_ADMIN_PASSWORD ??= 'true';
       server.middlewares.use(async (req, res, next) => {
         const handled = await handleApiRequest(req, res, basePath);
         if (!handled) {
@@ -182,6 +183,7 @@ export function viteApiPlugin(basePath = '/'): Plugin {
       });
     },
     configurePreviewServer(server: PreviewServer) {
+      process.env.ALLOW_DEFAULT_ADMIN_PASSWORD ??= 'true';
       server.middlewares.use(async (req, res, next) => {
         const handled = await handleApiRequest(req, res, basePath);
         if (!handled) {

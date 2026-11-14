@@ -98,8 +98,7 @@ export function CatalogPanel() {
 
         {/* Dynamiczne kategorie ze store */}
         {categories.map((category) => {
-          const isSelected =
-            selectedCategory === category.name || selectedCategory === category.id;
+          const isSelected = selectedCategory === category.name || selectedCategory === category.id;
           return (
             <button
               key={category.id}
@@ -146,7 +145,9 @@ export function CatalogPanel() {
               <article
                 key={product.id}
                 style={{
-                  border: isAvailable ? '1px solid var(--border-dim)' : '1px solid var(--border-error)',
+                  border: isAvailable
+                    ? '1px solid var(--border-dim)'
+                    : '1px solid var(--border-error)',
                   backgroundColor: 'var(--bg-main)',
                   padding: '0.75rem',
                   display: 'flex',
@@ -288,7 +289,11 @@ export function CatalogPanel() {
                       disabled={!isAvailable}
                       className="btn-primary"
                       style={{ padding: '0.25rem 0.65rem' }}
-                      title={isAvailable ? 'Dodaj produkt do koszyka' : 'Produkt chwilowo niedostępny w magazynie'}
+                      title={
+                        isAvailable
+                          ? 'Dodaj produkt do koszyka'
+                          : 'Produkt chwilowo niedostępny w magazynie'
+                      }
                     >
                       DODAJ -&gt;
                     </button>

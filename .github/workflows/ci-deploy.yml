@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - 'feat/**'
   pull_request:
     branches:
       - master
@@ -69,6 +70,8 @@ jobs:
           retention-days: 14
 
       - name: Build Production Assets
+        env:
+          VITE_BASE_PATH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && '/Shopping_cart/' || '/' }}
         run: npm run build
 
       - name: Configure GitHub Pages

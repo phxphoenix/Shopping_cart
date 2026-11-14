@@ -148,4 +148,3 @@ export function parsePlnInputToCents(rawInput: string): Cents {
 
   return toCents(totalCents);
 }
-

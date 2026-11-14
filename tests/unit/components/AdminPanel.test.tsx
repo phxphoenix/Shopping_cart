@@ -128,7 +128,9 @@ describe('AdminPanel component', () => {
     const deleteOdziezBtn = screen.getByRole('button', { name: /Usuń kategorię Odziez/i });
     await user.click(deleteOdziezBtn);
 
-    expect(screen.getByText(/Przypisane produkty.*zostaną automatycznie przeniesione/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Przypisane produkty.*zostaną automatycznie przeniesione/i)
+    ).toBeInTheDocument();
 
     const confirmBtn = screen.getByRole('button', { name: /POTWIERDŹ USUNIĘCIE I PRZENIEŚ/i });
     await user.click(confirmBtn);
@@ -207,7 +209,9 @@ describe('AdminPanel component', () => {
 
     await user.click(screen.getByRole('tab', { name: /\[3\] MIGRACJA PRODUKTÓW/i }));
 
-    expect(screen.getByText(/\/\/ MASOWA MIGRACJA PRODUKTÓW MIĘDZY KATEGORIAMI/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/\/\/ MASOWA MIGRACJA PRODUKTÓW MIĘDZY KATEGORIAMI/i)
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Zaznacz wszystkie/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Odznacz wszystkie/i })).toBeInTheDocument();
 

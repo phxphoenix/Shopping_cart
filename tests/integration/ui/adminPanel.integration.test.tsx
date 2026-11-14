@@ -370,6 +370,8 @@ describe('AdminPanel UI Integration', () => {
 
     // Close modal
     await user.click(within(orderModal).getByRole('button', { name: /ZAMKNIJ \[ESC\]/i }));
-    expect(screen.queryByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i })
+    ).not.toBeInTheDocument();
   });
 });

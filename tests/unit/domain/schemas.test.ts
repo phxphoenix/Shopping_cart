@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_CATEGORIES,
-  DEFAULT_CATEGORY_ID,
-  DEFAULT_CATALOG,
-} from '@/domain/catalog';
+import { DEFAULT_CATEGORIES, DEFAULT_CATEGORY_ID, DEFAULT_CATALOG } from '@/domain/catalog';
 import {
   CategorySchema,
   CustomerSchema,
@@ -155,9 +151,9 @@ describe('domain/schemas', () => {
     });
 
     it('rejects invalid category names (less than 2 or more than 50 chars)', () => {
-      expect(
-        CategorySchema.safeParse({ id: 'c1', name: 'A', description: 'Desc' }).success
-      ).toBe(false);
+      expect(CategorySchema.safeParse({ id: 'c1', name: 'A', description: 'Desc' }).success).toBe(
+        false
+      );
 
       expect(
         CategorySchema.safeParse({ id: 'c1', name: 'A'.repeat(51), description: 'Desc' }).success
@@ -165,9 +161,9 @@ describe('domain/schemas', () => {
     });
 
     it('rejects category without an ID', () => {
-      expect(
-        CategorySchema.safeParse({ id: '', name: 'Gry', description: 'Desc' }).success
-      ).toBe(false);
+      expect(CategorySchema.safeParse({ id: '', name: 'Gry', description: 'Desc' }).success).toBe(
+        false
+      );
     });
   });
 

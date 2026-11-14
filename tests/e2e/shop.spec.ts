@@ -319,7 +319,10 @@ test.describe('Retro Shopping Cart v3.0 - E2E Suite', () => {
     ).toBeVisible();
 
     // Register unique customer (name letters only per v3 domain rules)
-    const randomSuffix = Math.random().toString(36).replace(/[^a-z]/g, '').slice(0, 5);
+    const randomSuffix = Math.random()
+      .toString(36)
+      .replace(/[^a-z]/g, '')
+      .slice(0, 5);
     const uniqueName = `Klient Trwaly ${randomSuffix.toUpperCase()}`;
     const uniqueEmail = `trwaly.${Date.now()}@indexeddb.pl`;
     await page.getByLabel(/Imię i nazwisko:/i).fill(uniqueName);

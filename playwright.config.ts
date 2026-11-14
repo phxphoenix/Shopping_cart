@@ -23,7 +23,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm.cmd run build && npm.cmd run preview -- --port 4173 --strictPort',
+    command:
+      process.platform === 'win32'
+        ? 'npm.cmd run build && npm.cmd run preview -- --port 4173 --strictPort'
+        : 'npm run build && npm run preview -- --port 4173 --strictPort',
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 120 * 1000,

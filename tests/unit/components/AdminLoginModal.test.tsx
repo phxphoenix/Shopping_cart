@@ -20,7 +20,9 @@ describe('AdminLoginModal component', () => {
   it('renders modal dialog with accessible attributes, password input, and demo hint when isOpen is true', () => {
     render(<AdminLoginModal isOpen={true} onClose={vi.fn()} />);
 
-    expect(screen.getByRole('dialog', { name: /\/\/ AUTORYZACJA ADMINISTRATORA/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: /\/\/ AUTORYZACJA ADMINISTRATORA/i })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText(/Hasło dostępu administratora:/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /AUTORYZUJ DOSTĘP/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /\[ANULUJ\]/i })).toBeInTheDocument();
