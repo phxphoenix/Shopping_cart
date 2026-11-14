@@ -795,7 +795,7 @@ export function AdminPanel() {
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} {c.isDefault ? '[DOMYŚLNA]' : ''}
+                      {c.name}{c.isDefault ? ' [DOMYŚLNA]' : ''}
                     </option>
                   ))}
                 </select>
@@ -1105,7 +1105,7 @@ export function AdminPanel() {
                     .filter((c) => c.id !== migrateSourceCatId)
                     .map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.name} {c.isDefault ? '[DOMYŚLNA]' : ''}
+                        {c.name}{c.isDefault ? ' [DOMYŚLNA]' : ''}
                       </option>
                     ))}
                 </select>

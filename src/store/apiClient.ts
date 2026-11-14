@@ -277,10 +277,15 @@ export class ShopApiClient {
   }
 
   async placeOrder(input: PlaceOrderApiInput): Promise<ApiResult<Order>> {
-    return this.request<Order>('/api/orders', {
+    const res = await this.request<Order & { order?: Order }>('/api/orders', {
       method: 'POST',
       body: JSON.stringify(input),
     });
+    if (res.ok && res.data) {
+      const order = res.data.order ? res.data.order : res.data;
+      return { ok: true, status: res.status, data: order };
+    }
+    return res as ApiResult<Order>;
   }
 
   async deleteOrder(id: string): Promise<ApiResult<{ success: boolean; deletedOrderId: string }>> {

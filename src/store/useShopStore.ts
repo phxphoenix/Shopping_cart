@@ -1044,7 +1044,11 @@ export function createShopStore(
             payment: paymentInput,
           });
           if (apiRes.ok && apiRes.data) {
-            finalOrder = apiRes.data;
+            const raw = apiRes.data as unknown as Record<string, unknown>;
+            const unwrapped = (raw.order ? raw.order : raw) as Order;
+            if (unwrapped && unwrapped.id && unwrapped.timestamp) {
+              finalOrder = unwrapped;
+            }
           }
         }
 

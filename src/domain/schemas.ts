@@ -39,7 +39,18 @@ export function generateDomainId(prefix = 'id'): string {
 export const CustomerSchema = z.object({
   id: z.string().min(1, 'ID klienta jest wymagane'),
   name: z.string().min(1, 'Imię klienta jest wymagane'),
-  email: z.string().email('Nieprawidłowy adres email'),
+  email: z
+    .string()
+    .min(1, 'Adres email jest wymagany')
+    .refine(
+      (val) => {
+        if (val === '***' || val.includes('*')) {
+          return true;
+        }
+        return z.string().email().safeParse(val).success;
+      },
+      { message: 'Nieprawidłowy adres email' }
+    ),
 });
 export type Customer = z.infer<typeof CustomerSchema>;
 

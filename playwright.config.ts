@@ -7,10 +7,10 @@ const BASE_URL = `http://localhost:${PORT}${normalizedBasePath}`;
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: 'html',
   use: {
     baseURL: BASE_URL,
@@ -23,9 +23,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+    command: 'npm.cmd run build && npm.cmd run preview -- --port 4173 --strictPort',
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120 * 1000,
+    env: {
+      ADMIN_PASSWORD: 'admin123',
+      ALLOW_DEFAULT_ADMIN_PASSWORD: 'true',
+    },
   },
 });

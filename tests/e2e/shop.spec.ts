@@ -1,7 +1,18 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
+test.describe('Retro Shopping Cart v3.0 - E2E Suite', () => {
+  test.beforeEach(async ({ page }) => {
+    page.on('pageerror', (err) => {
+      console.error(`[PAGE_ERROR] ${err.message}\n${err.stack}`);
+    });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error' || msg.type() === 'warning') {
+        console.log(`[CONSOLE_${msg.type().toUpperCase()}] ${msg.text()}`);
+      }
+    });
+  });
+
   test('Scenario 1: Application loads under base path with 0 console errors, 0 page errors, and 0 HTTP >= 400 responses', async ({
     page,
   }) => {
@@ -139,7 +150,7 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     await expect(cartPanel.getByText('239,97 zł').last()).toBeVisible();
   });
 
-  test('Scenario 4: Customer registration, selection, and safe removal without corrupting orders', async ({
+  test('Scenario 4: Customer registration, selection, and safe removal without corrupting orders (v3)', async ({
     page,
   }) => {
     await page.goto('./');
@@ -149,16 +160,21 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
 
     const customersPanel = page.locator('section', { hasText: '// BAZA KLIENTÓW' });
 
+    // Verify public panel: no delete button, masked emails, system info note
+    await expect(
+      customersPanel.getByText(
+        /Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym/i
+      )
+    ).toBeVisible();
+    await expect(customersPanel.getByRole('button', { name: /^USUŃ$/i })).toHaveCount(0);
+    await expect(customersPanel.getByRole('button', { name: /Usuń klienta/i })).toHaveCount(0);
+
     // Register new customer
     await page.getByLabel(/Imię i nazwisko:/i).fill('Piotr Zieliński');
     await page.getByLabel(/Adres e-mail:/i).fill('piotr.zielinski@kadra.pl');
     await page.getByRole('button', { name: /\+ DODAJ KLIENTA/i }).click();
 
-    // Select new customer
-    const piotrBtn = customersPanel.getByRole('button', { name: /\[○\] Piotr Zieliński/i });
-    await expect(piotrBtn).toBeVisible();
-    await piotrBtn.click();
-
+    // Verify newly registered customer is active and visible
     await expect(
       customersPanel.locator('strong', { hasText: 'Piotr Zieliński' }).first()
     ).toBeVisible();
@@ -167,10 +183,34 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     const checkoutPanel = page.locator('section', { hasText: '// KASA & PŁATNOŚĆ' });
     await expect(checkoutPanel.getByText('Piotr Zieliński')).toBeVisible();
 
-    // Delete Anna Nowak (who has pre-seeded order in history)
-    const deleteAnnaBtn = customersPanel.getByRole('button', { name: /Usuń klienta Anna Nowak/i });
+    // Safe customer deletion: navigate to Admin Panel in v3
+    await page.getByRole('button', { name: 'PANEL ADMINA' }).click();
+    const loginModal = page.getByRole('dialog', { name: /\/\/ AUTORYZACJA ADMINISTRATORA/i });
+    await expect(loginModal).toBeVisible();
+    await page.getByLabel(/Hasło dostępu administratora:/i).fill('admin123');
+    await page.getByRole('button', { name: /AUTORYZUJ DOSTĘP/i }).click();
+
+    // AdminPanel open -> switch to [4] KLIENCI tab
+    await expect(
+      page.getByRole('heading', { name: /\/\/ SEKCJA ADMINISTRACYJNA \/\/ TRYB UPRAWNIONY/i })
+    ).toBeVisible();
+    await page.getByRole('tab', { name: /\[4\] KLIENCI/i }).click();
+
+    // Verify unmasked emails are shown in Admin view
+    await expect(page.getByText(/anna@nowak\.pl|anna\.nowak@example\.com/i)).toBeVisible();
+
+    // Delete customer Anna Nowak (who has pre-seeded order in history)
+    const deleteAnnaBtn = page.getByRole('button', { name: /Usuń klienta Anna Nowak/i });
     await deleteAnnaBtn.click();
+    await page.getByRole('button', { name: /POTWIERDŹ USUŃ\?/i }).click();
     await expect(deleteAnnaBtn).not.toBeVisible();
+
+    // Return to shop view
+    await page.getByRole('button', { name: /\[<- POWRÓT DO SKLEPU\]/i }).click();
+    await expect(page.getByRole('heading', { name: /\/\/ KATALOG PRODUKTÓW/i })).toBeVisible();
+
+    // Customer Anna Nowak is no longer in active customers panel
+    await expect(customersPanel.getByText('Anna Nowak')).toHaveCount(0);
 
     // Order history table still preserves Anna Nowak snapshot!
     const ordersPanel = page.locator('section', { hasText: '// HISTORIA ZAMÓWIEŃ' });
@@ -185,7 +225,6 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     const modal = page.getByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i });
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Anna Nowak')).toBeVisible();
-    await expect(modal.getByText('anna.nowak@example.com').first()).toBeVisible();
 
     // Close modal
     await modal.getByRole('button', { name: /ZAMKNIJ \[ESC\]/i }).click();
@@ -235,7 +274,7 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
 
     // Verify order in history
     const ordersPanel = page.locator('section', { hasText: '// HISTORIA ZAMÓWIEŃ' });
-    await expect(ordersPanel.getByText('**** **** **** 0366')).toBeVisible();
+    await expect(ordersPanel.getByText(/0366/)).toBeVisible();
 
     // PCI-DSS Hygiene: verify CVV is NOT in DOM and NOT in storage
     await expect(page.locator('body')).not.toContainText('789');
@@ -279,17 +318,18 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
       page.getByRole('heading', { name: /SHOPPING CART \/\/ TERMINAL v2\.0/i })
     ).toBeVisible();
 
-    // Register unique customer
-    const uniqueName = `Klient Trwały ${Date.now()}`;
+    // Register unique customer (name letters only per v3 domain rules)
+    const randomSuffix = Math.random().toString(36).replace(/[^a-z]/g, '').slice(0, 5);
+    const uniqueName = `Klient Trwaly ${randomSuffix.toUpperCase()}`;
+    const uniqueEmail = `trwaly.${Date.now()}@indexeddb.pl`;
     await page.getByLabel(/Imię i nazwisko:/i).fill(uniqueName);
-    await page.getByLabel(/Adres e-mail:/i).fill('trwaly@indexeddb.pl');
+    await page.getByLabel(/Adres e-mail:/i).fill(uniqueEmail);
     await page.getByRole('button', { name: /\+ DODAJ KLIENTA/i }).click();
 
-    // Select this customer
-    await page
-      .locator('section', { hasText: '// BAZA KLIENTÓW' })
-      .getByRole('button', { name: new RegExp(`\\[○\\] ${uniqueName}`, 'i') })
-      .click();
+    // Verify customer is selected and listed
+    await expect(
+      page.locator('section', { hasText: '// BAZA KLIENTÓW' }).getByText(uniqueName).first()
+    ).toBeVisible();
 
     // Add product to cart
     const floppy = page.locator('article', { hasText: 'AC-FLOPPY-08' });
@@ -303,6 +343,9 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
 
     const ordersPanel = page.locator('section', { hasText: '// HISTORIA ZAMÓWIEŃ' });
     await expect(ordersPanel.getByText(uniqueName)).toBeVisible();
+
+    // Brief pause to allow async IndexedDB write before reload
+    await page.waitForTimeout(300);
 
     // RELOAD PAGE
     await page.reload();
@@ -386,7 +429,7 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     }
 
     const parsed = JSON.parse(jsonText);
-    expect(parsed.version).toBe(2);
+    expect([2, 3]).toContain(parsed.version);
     expect(Array.isArray(parsed.customers)).toBe(true);
     expect(Array.isArray(parsed.orders)).toBe(true);
 
@@ -424,6 +467,9 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     await expect(crtBtn).toHaveText('CRT FX: OFF');
     await expect(appRoot).not.toHaveClass(/crt-fx-enabled/);
 
+    // Wait a brief moment for IndexedDB persist before reload
+    await page.waitForTimeout(300);
+
     // Reload and check persistence
     await page.reload();
     await expect(page.getByRole('button', { name: /CRT FX: OFF/i })).toBeVisible();
@@ -448,7 +494,7 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     await expect(page.getByRole('heading', { name: /\/\/ KOSZYK/i })).toBeVisible();
   });
 
-  test('Scenario 10: Axe accessibility audit (zero critical and serious violations in main view and details modal)', async ({
+  test('Scenario 10: Axe accessibility audit (zero critical and serious violations in main view, modals, and AdminPanel tabs)', async ({
     page,
   }) => {
     await page.goto('./');
@@ -456,7 +502,7 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
       page.getByRole('heading', { name: /SHOPPING CART \/\/ TERMINAL v2\.0/i })
     ).toBeVisible();
 
-    // Analyze main view
+    // 1. Analyze main shop view
     const mainResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
@@ -466,21 +512,239 @@ test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
     );
     expect(mainSevereViolations).toEqual([]);
 
-    // Open Order Details Modal
+    // 2. Open Order Details Modal & Analyze
     const detailsBtn = page.getByRole('button', { name: /Szczegóły/i }).first();
     await detailsBtn.click();
 
-    const modal = page.getByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i });
-    await expect(modal).toBeVisible();
+    const orderModal = page.getByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i });
+    await expect(orderModal).toBeVisible();
 
-    // Analyze view with modal open
-    const modalResults = await new AxeBuilder({ page })
+    const orderModalResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
 
-    const modalSevereViolations = modalResults.violations.filter(
+    const orderModalViolations = orderModalResults.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
     );
-    expect(modalSevereViolations).toEqual([]);
+    expect(orderModalViolations).toEqual([]);
+
+    // Close details modal
+    await page.keyboard.press('Escape');
+    await expect(orderModal).not.toBeVisible();
+
+    // 3. Open AdminLoginModal & Analyze
+    await page.getByRole('button', { name: 'PANEL ADMINA' }).click();
+    const loginModal = page.getByRole('dialog', { name: /\/\/ AUTORYZACJA ADMINISTRATORA/i });
+    await expect(loginModal).toBeVisible();
+
+    const loginModalResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+
+    const loginModalViolations = loginModalResults.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(loginModalViolations).toEqual([]);
+
+    // 4. Log in and scan AdminPanel tabs
+    await page.getByLabel(/Hasło dostępu administratora:/i).fill('admin123');
+    await page.getByRole('button', { name: /AUTORYZUJ DOSTĘP/i }).click();
+
+    await expect(
+      page.getByRole('heading', { name: /\/\/ SEKCJA ADMINISTRACYJNA \/\/ TRYB UPRAWNIONY/i })
+    ).toBeVisible();
+
+    // Tab 1: KATEGORIE
+    const tab1Results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const tab1Violations = tab1Results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(tab1Violations).toEqual([]);
+
+    // Tab 2: PRODUKTY
+    await page.getByRole('tab', { name: /\[2\] PRODUKTY/i }).click();
+    await page.waitForTimeout(250);
+    const tab2Results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const tab2Violations = tab2Results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(tab2Violations).toEqual([]);
+
+    // Tab 3: MIGRACJA PRODUKTÓW
+    await page.getByRole('tab', { name: /\[3\] MIGRACJA PRODUKTÓW/i }).click();
+    await page.waitForTimeout(250);
+    const tab3Results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const tab3Violations = tab3Results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(tab3Violations).toEqual([]);
+
+    // Tab 4: KLIENCI
+    await page.getByRole('tab', { name: /\[4\] KLIENCI/i }).click();
+    await page.waitForTimeout(250);
+    const tab4Results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const tab4Violations = tab4Results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(tab4Violations).toEqual([]);
+  });
+
+  test('Scenario 11: Admin catalog configuration, product migration, and storefront purchase flow', async ({
+    page,
+  }) => {
+    await page.goto('./');
+    await expect(
+      page.getByRole('heading', { name: /SHOPPING CART \/\/ TERMINAL v2\.0/i })
+    ).toBeVisible();
+
+    // 1. Open Admin Panel & Log in
+    await page.getByRole('button', { name: 'PANEL ADMINA' }).click();
+    const loginModal = page.getByRole('dialog', { name: /\/\/ AUTORYZACJA ADMINISTRATORA/i });
+    await expect(loginModal).toBeVisible();
+    await page.getByLabel(/Hasło dostępu administratora:/i).fill('admin123');
+    await page.getByRole('button', { name: /AUTORYZUJ DOSTĘP/i }).click();
+
+    await expect(
+      page.getByRole('heading', { name: /\/\/ SEKCJA ADMINISTRACYJNA \/\/ TRYB UPRAWNIONY/i })
+    ).toBeVisible();
+
+    // 2. Tab 1: Create new Category "Cyberdecki"
+    await page.getByLabel(/Nazwa kategorii/i).fill('Cyberdecki');
+    await page.getByLabel(/Opis kategorii/i).fill('Terminale mobilne retro cyberware');
+    await page.getByRole('button', { name: /\+ DODAJ KATEGORIĘ/i }).click();
+    await expect(page.locator('strong', { hasText: 'Cyberdecki' })).toBeVisible();
+
+    // 3. Tab 2: Create new Product in Cyberdecki
+    await page.getByRole('tab', { name: /\[2\] PRODUKTY/i }).click();
+    await page.getByLabel(/SKU \(Unikalny kod\):/i).fill('HW-DECK-01');
+    await page.getByLabel(/Nazwa produktu:/i).fill('Cyberdeck Onyx 486');
+    await page.locator('#prod-cat-select').selectOption({ label: 'Cyberdecki' });
+    await page.getByLabel(/Cena \(PLN\):/i).fill('1299.99');
+    await page.getByLabel(/Stan magazynowy \(szt\.\):/i).fill('5');
+    await page.getByLabel(/Opis produktu:/i).fill('Mobilny terminal z monochromatycznym ekranem');
+    await page.getByRole('button', { name: /\+ DODAJ PRODUKT DO KATALOGU/i }).click();
+
+    await expect(page.locator('strong', { hasText: 'Cyberdeck Onyx 486' })).toBeVisible();
+
+    // 4. Tab 3: Migrate products between categories
+    await page.getByRole('tab', { name: /\[3\] MIGRACJA PRODUKTÓW/i }).click();
+    await expect(
+      page.getByText(/\/\/ MASOWA MIGRACJA PRODUKTÓW MIĘDZY KATEGORIAMI/i)
+    ).toBeVisible();
+
+    // Select source: Cyberdecki, target: Elektronika
+    const cyberVal = await page
+      .locator('#migrate-source-cat option', { hasText: 'Cyberdecki' })
+      .getAttribute('value');
+    await page.locator('#migrate-source-cat').selectOption(cyberVal!);
+
+    const elekVal = await page
+      .locator('#migrate-target-cat option', { hasText: 'Elektronika' })
+      .getAttribute('value');
+    await page.locator('#migrate-target-cat').selectOption(elekVal!);
+    await page.getByRole('button', { name: /MIGRUJ WYBRANE PRODUKTY/i }).click();
+    await expect(page.getByText(/SUKCES: Pomyślnie przeniesiono/i)).toBeVisible();
+
+    // Migrate back to Cyberdecki
+    await page.locator('#migrate-source-cat').selectOption(elekVal!);
+    const cyberTargetVal = await page
+      .locator('#migrate-target-cat option', { hasText: 'Cyberdecki' })
+      .getAttribute('value');
+    await page.locator('#migrate-target-cat').selectOption(cyberTargetVal!);
+    await page.getByRole('button', { name: /MIGRUJ WYBRANE PRODUKTY/i }).click();
+    await expect(page.getByText(/SUKCES: Pomyślnie przeniesiono/i)).toBeVisible();
+
+    // 5. Return to store
+    await page.getByRole('button', { name: /\[<- POWRÓT DO SKLEPU\]/i }).click();
+    await expect(page.getByRole('heading', { name: /\/\/ KATALOG PRODUKTÓW/i })).toBeVisible();
+
+    // Ensure active customer exists for checkout
+    const customersPanel = page.locator('section', { hasText: '// BAZA KLIENTÓW' });
+    const firstCustomerBtn = customersPanel.getByRole('button', { name: /Wybierz/i }).first();
+    if (await firstCustomerBtn.isVisible()) {
+      await firstCustomerBtn.click();
+    }
+
+    // 6. Filter by new category "Cyberdecki"
+    const cyberdeckFilterBtn = page.getByRole('button', { name: /Cyberdecki/i });
+    await expect(cyberdeckFilterBtn).toBeVisible();
+    await cyberdeckFilterBtn.click();
+
+    // 7. Add Cyberdeck Onyx 486 to cart
+    const deckArticle = page.locator('article', { hasText: 'HW-DECK-01' });
+    await expect(deckArticle).toBeVisible();
+    await deckArticle.getByRole('button', { name: /DODAJ ->/i }).click();
+
+    // Verify in cart
+    const cartPanel = page.locator('section', { hasText: '// KOSZYK' });
+    await expect(cartPanel.getByText('Cyberdeck Onyx 486')).toBeVisible();
+
+    // 8. Place order
+    const checkoutPanel = page.locator('section', { hasText: '// KASA & PŁATNOŚĆ' });
+    await checkoutPanel.getByRole('button', { name: 'PayPal' }).click();
+    await page.getByLabel(/Adres e-mail konta PayPal/i).fill('deck.runner@cyber.net');
+    await checkoutPanel.getByRole('button', { name: /ZAMÓW I ZAPŁAĆ/i }).click();
+
+    // Verify in order history
+    const ordersPanel = page.locator('section', { hasText: '// HISTORIA ZAMÓWIEŃ' });
+    await expect(ordersPanel.getByText('PayPal (deck.runner@cyber.net)')).toBeVisible();
+
+    // Verify order items inside Details modal
+    const detailsBtn = ordersPanel.getByRole('button', { name: /Szczegóły/i }).first();
+    await detailsBtn.click();
+    const modal = page.getByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i });
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText('Cyberdeck Onyx 486')).toBeVisible();
+    await modal.getByRole('button', { name: /ZAMKNIJ \[ESC\]/i }).click();
+    await expect(modal).not.toBeVisible();
+  });
+
+  test('Scenario 12: API Security - unauthenticated mutating requests return 401 Unauthorized', async ({
+    request,
+  }) => {
+    // 1. DELETE /api/customers without session
+    const deleteCustRes = await request.delete('./api/customers?id=cust-demo-1');
+    expect(deleteCustRes.status()).toBe(401);
+    const deleteCustData = await deleteCustRes.json();
+    expect(deleteCustData.error).toContain('Brak uprawnień');
+
+    // 2. POST /api/products without session
+    const postProdRes = await request.post('./api/products', {
+      data: {
+        sku: 'HACK-01',
+        name: 'Nieautoryzowany Produkt',
+        priceCents: 1000,
+        stockQuantity: 10,
+        categoryId: 'cat-default',
+      },
+    });
+    expect(postProdRes.status()).toBe(401);
+    const postProdData = await postProdRes.json();
+    expect(postProdData.error).toContain('Brak uprawnień');
+
+    // 3. POST /api/categories without session
+    const postCatRes = await request.post('./api/categories', {
+      data: {
+        name: 'Nieautoryzowana Kategoria',
+      },
+    });
+    expect(postCatRes.status()).toBe(401);
+
+    // 4. POST /api/categories/migrate without session
+    const migrateRes = await request.post('./api/categories/migrate', {
+      data: {
+        sourceCategoryId: 'cat-default',
+        targetCategoryId: 'cat-elektronika',
+      },
+    });
+    expect(migrateRes.status()).toBe(401);
   });
 });

@@ -117,7 +117,7 @@ export function OrderHistoryPanel() {
                     title="Kliknij dwukrotnie, aby otworzyć szczegóły"
                   >
                     <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
-                      {order.timestamp.slice(0, 16)}
+                      {order.timestamp ? order.timestamp.slice(0, 16) : '---'}
                     </td>
                     <td
                       style={{

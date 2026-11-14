@@ -136,6 +136,55 @@ describe('CustomersPanel UI Integration', () => {
     expect(useShopStore.getState().selectedCustomerId).toBe('c-2');
   });
 
+  it('rejects duplicate email registration (case-insensitive) and displays error alert', async () => {
+    const user = userEvent.setup();
+    render(<CustomersPanel />);
+
+    const nameInput = screen.getByLabelText(/Imię i nazwisko:/i);
+    const emailInput = screen.getByLabelText(/Adres e-mail:/i);
+    const submitBtn = screen.getByRole('button', { name: /\+ DODAJ KLIENTA/i });
+
+    // Attempt to register with existing email in uppercase
+    await user.type(nameInput, 'Jan Inny');
+    await user.type(emailInput, 'JAN@KOWALSKI.PL');
+    await user.click(submitBtn);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/już zarejestrowany w systemie/i)).toBeInTheDocument();
+    expect(useShopStore.getState().customers).toHaveLength(2);
+  });
+
+  it('rejects invalid name formats containing numbers or HTML tags and displays error alert', async () => {
+    const user = userEvent.setup();
+    render(<CustomersPanel />);
+
+    const nameInput = screen.getByLabelText(/Imię i nazwisko:/i);
+    const emailInput = screen.getByLabelText(/Adres e-mail:/i);
+    const submitBtn = screen.getByRole('button', { name: /\+ DODAJ KLIENTA/i });
+
+    // Digits in name
+    await user.type(nameInput, 'Janek123');
+    await user.type(emailInput, 'janek123@example.com');
+    await user.click(submitBtn);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(
+      screen.getByText(/cyfry i znaki specjalne są niedozwolone/i)
+    ).toBeInTheDocument();
+    expect(useShopStore.getState().customers).toHaveLength(2);
+
+    // HTML / XSS tags in name
+    await user.clear(nameInput);
+    await user.type(nameInput, '<script>alert(1)</script>');
+    await user.click(submitBtn);
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(
+      screen.getByText(/cyfry i znaki specjalne są niedozwolone/i)
+    ).toBeInTheDocument();
+    expect(useShopStore.getState().customers).toHaveLength(2);
+  });
+
   it('rejects bot submission when honeypot field is populated', async () => {
     const user = userEvent.setup();
     render(<CustomersPanel />);
