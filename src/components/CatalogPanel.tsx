@@ -1,16 +1,6 @@
 import { useState, type ChangeEvent } from 'react';
-import type { ProductCategory } from '@/domain/catalog';
 import { formatPLN } from '@/domain/money';
 import { useShopStore } from '@/store/useShopStore';
-
-const CATEGORIES: readonly (ProductCategory | 'ALL')[] = [
-  'ALL',
-  'Elektronika',
-  'Odziez',
-  'Akcesoria',
-  'Edukacja',
-  'Retro Hardware',
-];
 
 export function CatalogPanel() {
   const {
@@ -18,6 +8,7 @@ export function CatalogPanel() {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
+    categories,
     getFilteredProducts,
     addToCart,
   } = useShopStore();
@@ -83,7 +74,7 @@ export function CatalogPanel() {
         </div>
       </div>
 
-      {/* Filtry kategorii */}
+      {/* Dynamiczne filtry kategorii */}
       <div
         role="group"
         aria-label="Filtry kategorii produktów"
@@ -94,19 +85,31 @@ export function CatalogPanel() {
           marginBottom: '1rem',
         }}
       >
-        {CATEGORIES.map((category) => {
-          const isSelected = selectedCategory === category;
-          const label = category === 'ALL' ? 'WSZYSTKIE' : category;
+        {/* Kategoria Wszystkie */}
+        <button
+          type="button"
+          onClick={() => setSelectedCategory('ALL')}
+          className={selectedCategory === 'ALL' ? 'btn-active' : ''}
+          aria-pressed={selectedCategory === 'ALL'}
+          style={{ fontSize: 'var(--font-size-xs)' }}
+        >
+          {selectedCategory === 'ALL' ? '> WSZYSTKIE' : 'WSZYSTKIE'}
+        </button>
+
+        {/* Dynamiczne kategorie ze store */}
+        {categories.map((category) => {
+          const isSelected =
+            selectedCategory === category.name || selectedCategory === category.id;
           return (
             <button
-              key={category}
+              key={category.id}
               type="button"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setSelectedCategory(category.name)}
               className={isSelected ? 'btn-active' : ''}
               aria-pressed={isSelected}
               style={{ fontSize: 'var(--font-size-xs)' }}
             >
-              {isSelected ? `> ${label}` : label}
+              {isSelected ? `> ${category.name}` : category.name}
             </button>
           );
         })}
@@ -137,11 +140,13 @@ export function CatalogPanel() {
         >
           {filteredProducts.map((product) => {
             const qty = getQty(product.id);
+            const isAvailable = Boolean(product.inStock && product.stockQuantity > 0);
+
             return (
               <article
                 key={product.id}
                 style={{
-                  border: '1px solid var(--border-dim)',
+                  border: isAvailable ? '1px solid var(--border-dim)' : '1px solid var(--border-error)',
                   backgroundColor: 'var(--bg-main)',
                   padding: '0.75rem',
                   display: 'flex',
@@ -170,7 +175,29 @@ export function CatalogPanel() {
                       {product.name}
                     </strong>
                   </div>
-                  <span className="badge">kat: {product.category}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span className="badge">kat: {product.category}</span>
+                    {isAvailable ? (
+                      <span
+                        style={{
+                          fontSize: 'var(--font-size-xs)',
+                          color: 'var(--text-muted)',
+                        }}
+                      >
+                        Stan: {product.stockQuantity} szt.
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 'var(--font-size-xs)',
+                          color: 'var(--error)',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        [NIEDOSTĘPNY]
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Opis */}
@@ -223,7 +250,7 @@ export function CatalogPanel() {
                     <button
                       type="button"
                       onClick={() => setQty(product.id, qty - 1)}
-                      disabled={qty <= 1}
+                      disabled={!isAvailable || qty <= 1}
                       aria-label={`Zmniejsz ilość dla ${product.name}`}
                       style={{ padding: '0.2rem 0.5rem' }}
                     >
@@ -238,6 +265,7 @@ export function CatalogPanel() {
                       min={1}
                       max={99}
                       value={qty}
+                      disabled={!isAvailable}
                       onChange={(e) => handleQtyChange(product.id, e)}
                       style={{
                         width: '46px',
@@ -248,7 +276,7 @@ export function CatalogPanel() {
                     <button
                       type="button"
                       onClick={() => setQty(product.id, qty + 1)}
-                      disabled={qty >= 99}
+                      disabled={!isAvailable || qty >= 99}
                       aria-label={`Zwiększ ilość dla ${product.name}`}
                       style={{ padding: '0.2rem 0.5rem' }}
                     >
@@ -257,8 +285,10 @@ export function CatalogPanel() {
                     <button
                       type="button"
                       onClick={() => handleAddToCart(product.id)}
+                      disabled={!isAvailable}
                       className="btn-primary"
                       style={{ padding: '0.25rem 0.65rem' }}
+                      title={isAvailable ? 'Dodaj produkt do koszyka' : 'Produkt chwilowo niedostępny w magazynie'}
                     >
                       DODAJ -&gt;
                     </button>

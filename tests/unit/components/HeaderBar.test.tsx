@@ -11,6 +11,8 @@ describe('HeaderBar component', () => {
       customers: [],
       orders: [],
       cart: [],
+      isAdminAuthenticated: false,
+      activeView: 'shop',
     });
   });
 
@@ -20,9 +22,46 @@ describe('HeaderBar component', () => {
       screen.getByRole('heading', { name: /SHOPPING CART \/\/ TERMINAL v2\.0/i })
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /CRT FX: ON/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /PANEL ADMINA/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /IMPORT JSON/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /EXPORT JSON/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /RESET DEMO/i })).toBeInTheDocument();
+  });
+
+  it('triggers onOpenLoginModal when clicking PANEL ADMINA while unauthenticated', async () => {
+    const user = userEvent.setup();
+    const openModalMock = vi.fn();
+    render(<HeaderBar onOpenLoginModal={openModalMock} />);
+
+    await user.click(screen.getByRole('button', { name: /PANEL ADMINA/i }));
+    expect(openModalMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders view switcher and logout button when admin is authenticated', async () => {
+    const user = userEvent.setup();
+    useShopStore.setState({ isAdminAuthenticated: true, activeView: 'shop' });
+
+    render(<HeaderBar />);
+    expect(screen.getByRole('button', { name: /PANEL ADMINA/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /WYLOGUJ ADMINA/i })).toBeInTheDocument();
+
+    // Click PANEL ADMINA to switch view to admin
+    await user.click(screen.getByRole('button', { name: /PANEL ADMINA/i }));
+    expect(useShopStore.getState().activeView).toBe('admin');
+  });
+
+  it('switches back to shop view when in admin view and logs out admin', async () => {
+    const user = userEvent.setup();
+    useShopStore.setState({ isAdminAuthenticated: true, activeView: 'admin' });
+
+    render(<HeaderBar />);
+    expect(screen.getByRole('button', { name: /WIDOK: SKLEP/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /WIDOK: SKLEP/i }));
+    expect(useShopStore.getState().activeView).toBe('shop');
+
+    await user.click(screen.getByRole('button', { name: /WYLOGUJ ADMINA/i }));
+    expect(useShopStore.getState().isAdminAuthenticated).toBe(false);
   });
 
   it('toggles CRT FX setting when clicking toggle button', async () => {

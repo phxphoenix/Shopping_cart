@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CatalogPanel } from '@/components/CatalogPanel';
+import { toCents } from '@/domain/money';
 import { useShopStore } from '@/store/useShopStore';
 
 describe('CatalogPanel component', () => {
@@ -19,6 +20,7 @@ describe('CatalogPanel component', () => {
     expect(screen.getByRole('button', { name: /> WSZYSTKIE/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Elektronika/i })).toBeInTheDocument();
     expect(screen.getByText('Laptop')).toBeInTheDocument();
+    expect(screen.getByText(/Stan: 12 szt\./i)).toBeInTheDocument();
   });
 
   it('filters products by search input', async () => {
@@ -55,5 +57,29 @@ describe('CatalogPanel component', () => {
     const cart = useShopStore.getState().cart;
     expect(cart.length).toBe(1);
     expect(cart[0]?.quantity).toBe(1);
+  });
+
+  it('disables add to cart button and displays [NIEDOSTĘPNY] when product is out of stock', () => {
+    useShopStore.setState({
+      catalog: [
+        {
+          id: 'out-of-stock-prod',
+          sku: 'OUT-01',
+          name: 'Produkt Wyprzedany',
+          priceCents: toCents(10000),
+          categoryId: 'cat-elektronika',
+          category: 'Elektronika',
+          description: 'Brak w magazynie',
+          inStock: false,
+          stockQuantity: 0,
+        },
+      ],
+    });
+
+    render(<CatalogPanel />);
+    expect(screen.getByText('[NIEDOSTĘPNY]')).toBeInTheDocument();
+
+    const addBtn = screen.getByRole('button', { name: /DODAJ ->/i });
+    expect(addBtn).toBeDisabled();
   });
 });

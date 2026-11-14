@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { CustomerSchema } from '@/domain/schemas';
+import { maskCustomerEmail, validateNewCustomerRegistration } from '@/domain/customer';
 import { useShopStore } from '@/store/useShopStore';
 
 export function CustomersPanel() {
@@ -8,15 +8,22 @@ export function CustomersPanel() {
     selectedCustomerId,
     selectCustomer,
     addCustomer,
-    removeCustomer,
     getSelectedCustomer,
+    unlockedCustomerEmails,
+    isAdminAuthenticated,
   } = useShopStore();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [companyWebsite, setCompanyWebsite] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
   const selectedCustomer = getSelectedCustomer();
+  const selectedDisplayEmail = selectedCustomer
+    ? isAdminAuthenticated || Boolean(unlockedCustomerEmails[selectedCustomer.id])
+      ? selectedCustomer.email
+      : maskCustomerEmail(selectedCustomer.email)
+    : '';
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -24,26 +31,35 @@ export function CustomersPanel() {
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
+    const trimmedHoneypot = companyWebsite.trim();
 
-    // Client-side quick validation matching CustomerSchema
-    const parseResult = CustomerSchema.pick({ name: true, email: true }).safeParse({
-      name: trimmedName,
-      email: trimmedEmail,
-    });
+    try {
+      // Validate customer registration using domain rules (name format, email format, honeypot, uniqueness)
+      const validated = validateNewCustomerRegistration(customers, {
+        name: trimmedName,
+        email: trimmedEmail,
+        companyWebsite: trimmedHoneypot,
+        honeypot: trimmedHoneypot,
+      });
 
-    if (!parseResult.success) {
-      const errorMsg = parseResult.error.errors.map((err) => err.message).join('; ');
+      const success = addCustomer({
+        name: validated.name,
+        email: validated.email,
+        honeypot: trimmedHoneypot,
+        companyWebsite: trimmedHoneypot,
+      });
+
+      if (success) {
+        setName('');
+        setEmail('');
+        setCompanyWebsite('');
+        setFormError(null);
+      } else {
+        setFormError('Nie udało się zarejestrować klienta. Sprawdź poprawność danych.');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
       setFormError(errorMsg);
-      return;
-    }
-
-    const success = addCustomer({ name: trimmedName, email: trimmedEmail });
-    if (success) {
-      setName('');
-      setEmail('');
-      setFormError(null);
-    } else {
-      setFormError('Nie udało się dodać klienta. Sprawdź poprawność danych.');
     }
   };
 
@@ -68,7 +84,7 @@ export function CustomersPanel() {
         <span style={{ color: 'var(--text-muted)' }}>AKTYWNY KLIENT DO ZAMÓWIENIA: </span>
         {selectedCustomer ? (
           <strong style={{ color: 'var(--accent)' }}>
-            {selectedCustomer.name} ({selectedCustomer.email})
+            {selectedCustomer.name} ({selectedDisplayEmail})
           </strong>
         ) : (
           <span style={{ color: 'var(--warning)' }}>[BRAK - WYBIERZ KLIENTA Z LISTY PONIŻEJ]</span>
@@ -125,6 +141,32 @@ export function CustomersPanel() {
           />
         </div>
 
+        {/* Ukryte pole anty-botowe honeypot zgodne z WCAG AA */}
+        <div
+          style={{
+            position: 'absolute',
+            left: '-9999px',
+            top: '-9999px',
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+          }}
+          aria-hidden="true"
+        >
+          <label htmlFor="customer-company-website" className="sr-only">
+            Strona WWW firmy:
+          </label>
+          <input
+            id="customer-company-website"
+            name="companyWebsite"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={companyWebsite}
+            onChange={(e) => setCompanyWebsite(e.target.value)}
+          />
+        </div>
+
         {formError && (
           <div
             role="alert"
@@ -172,6 +214,12 @@ export function CustomersPanel() {
         ) : (
           customers.map((customer) => {
             const isSelected = selectedCustomerId === customer.id;
+            const isEmailUnlocked =
+              isAdminAuthenticated || Boolean(unlockedCustomerEmails[customer.id]);
+            const displayEmail = isEmailUnlocked
+              ? customer.email
+              : maskCustomerEmail(customer.email);
+
             return (
               <div
                 key={customer.id}
@@ -220,29 +268,28 @@ export function CustomersPanel() {
                         color: 'var(--text-muted)',
                       }}
                     >
-                      ({customer.email})
+                      ({displayEmail})
                     </span>
                   </div>
-                </button>
-
-                {/* Bezpieczne usuwanie klienta */}
-                <button
-                  type="button"
-                  onClick={() => removeCustomer(customer.id)}
-                  className="btn-danger"
-                  aria-label={`Usuń klienta ${customer.name}`}
-                  style={{
-                    padding: '0.15rem 0.45rem',
-                    fontSize: 'var(--font-size-xs)',
-                  }}
-                  title="Usuń klienta z listy (historia wcześniejszych zamówień zachowuje snapshot danych klienta)"
-                >
-                  USUŃ
                 </button>
               </div>
             );
           })
         )}
+      </div>
+
+      {/* Subtelna informacja o braku akcji usuwania w widoku publicznym */}
+      <div
+        style={{
+          marginTop: '0.75rem',
+          paddingTop: '0.5rem',
+          borderTop: '1px dotted var(--border-dim)',
+          fontSize: 'var(--font-size-xs)',
+          color: 'var(--text-dim)',
+          lineHeight: 1.4,
+        }}
+      >
+        // INFORMACJA SYSTEMOWA: Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym.
       </div>
     </section>
   );

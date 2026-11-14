@@ -39,22 +39,44 @@ describe('CustomersPanel UI Integration', () => {
 
   beforeEach(() => {
     useShopStore.setState({
-      isAdminAuthenticated: true,
+      isAdminAuthenticated: false,
+      unlockedCustomerEmails: {},
       customers: [...initialCustomers],
       selectedCustomerId: 'c-1',
       orders: [existingOrder],
     });
   });
 
-  it('renders registered customers and active customer badge', () => {
+  it('renders registered customers with masked emails in public view without delete button', () => {
     render(<CustomersPanel />);
 
     expect(screen.getByRole('heading', { name: /\/\/ BAZA KLIENTÓW \(2\)/i })).toBeInTheDocument();
-    expect(screen.getByText(/Jan Kowalski \(jan@kowalski\.pl\)/i)).toBeInTheDocument();
+    // Names appear in badge and in list
+    expect(screen.getAllByText(/Jan Kowalski/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Anna Nowak')).toBeInTheDocument();
+    // Emails masked in public view
+    expect(screen.getAllByText(/j\*\*\*n@kowalski\.pl/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/\(a\*\*\*a@nowak\.pl\)/i)).toBeInTheDocument();
+
+    // Verify delete button is NOT present in public view
+    expect(screen.queryByRole('button', { name: /USUŃ/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Usuń klienta/i })).not.toBeInTheDocument();
+
+    // Verify information note is present
+    expect(
+      screen.getByText(/Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym/i)
+    ).toBeInTheDocument();
   });
 
-  it('adds a valid new customer, updates store, and clears form inputs', async () => {
+  it('displays full unmasked email when isAdminAuthenticated is true', () => {
+    useShopStore.setState({ isAdminAuthenticated: true });
+    render(<CustomersPanel />);
+
+    expect(screen.getAllByText(/\(jan@kowalski\.pl\)/i).length).toBe(2);
+    expect(screen.getByText(/\(anna@nowak\.pl\)/i)).toBeInTheDocument();
+  });
+
+  it('adds a valid new customer, updates store, and clears form inputs with session unmasking', async () => {
     const user = userEvent.setup();
     render(<CustomersPanel />);
 
@@ -72,7 +94,6 @@ describe('CustomersPanel UI Integration', () => {
 
     // Customer added to list and store
     expect(screen.getByText('Tomasz Karolak')).toBeInTheDocument();
-    expect(screen.getByText('(tomasz@teatr.pl)')).toBeInTheDocument();
     expect(useShopStore.getState().customers).toHaveLength(3);
   });
 
@@ -95,7 +116,7 @@ describe('CustomersPanel UI Integration', () => {
     await user.click(submitBtn);
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/Nieprawidłowy adres email/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nieprawidłowy.*adres.*e-mail/i)).toBeInTheDocument();
     expect(useShopStore.getState().customers).toHaveLength(2);
   });
 
@@ -105,34 +126,31 @@ describe('CustomersPanel UI Integration', () => {
 
     // Initially c-1 is selected
     expect(screen.getByText(/AKTYWNY KLIENT DO ZAMÓWIENIA:/i)).toBeInTheDocument();
-    expect(screen.getByText(/Jan Kowalski \(jan@kowalski\.pl\)/i)).toBeInTheDocument();
 
     // Select Anna Nowak
     const selectAnnaBtn = screen.getByRole('button', {
-      name: /Anna Nowak \(anna@nowak\.pl\)/i,
+      name: /Anna Nowak/i,
     });
     await user.click(selectAnnaBtn);
 
     expect(useShopStore.getState().selectedCustomerId).toBe('c-2');
-    expect(screen.getByText(/Anna Nowak \(anna@nowak\.pl\)/i)).toBeInTheDocument();
   });
 
-  it('safely deletes customer without breaking existing order customer snapshot', async () => {
+  it('rejects bot submission when honeypot field is populated', async () => {
     const user = userEvent.setup();
     render(<CustomersPanel />);
 
-    // Delete Anna Nowak (who has existingOrder ord-hist-01)
-    const deleteAnnaBtn = screen.getByRole('button', { name: /Usuń klienta Anna Nowak/i });
-    await user.click(deleteAnnaBtn);
+    const nameInput = screen.getByLabelText(/Imię i nazwisko:/i);
+    const emailInput = screen.getByLabelText(/Adres e-mail:/i);
+    const honeypotInput = screen.getByLabelText(/Strona WWW firmy/i);
+    const submitBtn = screen.getByRole('button', { name: /\+ DODAJ KLIENTA/i });
 
-    // Anna Nowak is removed from customer database
-    expect(useShopStore.getState().customers).toHaveLength(1);
-    expect(screen.queryByText(/Usuń klienta Anna Nowak/i)).not.toBeInTheDocument();
+    await user.type(nameInput, 'Bot Internetowy');
+    await user.type(emailInput, 'bot@spam.com');
+    await user.type(honeypotInput, 'http://spam-link.xyz');
+    await user.click(submitBtn);
 
-    // Verify existing order still preserves the customer snapshot safely!
-    const orders = useShopStore.getState().orders;
-    expect(orders).toHaveLength(1);
-    expect(orders[0]?.customer.name).toBe('Anna Nowak');
-    expect(orders[0]?.customer.email).toBe('anna@nowak.pl');
+    expect(screen.getByRole('alert')).toHaveTextContent(/anty-spam honeypot/i);
+    expect(useShopStore.getState().customers).toHaveLength(2);
   });
 });

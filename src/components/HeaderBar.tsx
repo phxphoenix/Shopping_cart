@@ -2,9 +2,23 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { useShopStore } from '@/store/useShopStore';
 import { downloadTextFile } from '@/utils/download';
 
-export function HeaderBar() {
-  const { settings, toggleCrtFx, exportBackupJson, importBackupJson, resetDemoData, setStatus } =
-    useShopStore();
+export interface HeaderBarProps {
+  onOpenLoginModal?: () => void;
+}
+
+export function HeaderBar({ onOpenLoginModal }: HeaderBarProps = {}) {
+  const {
+    settings,
+    toggleCrtFx,
+    exportBackupJson,
+    importBackupJson,
+    resetDemoData,
+    setStatus,
+    isAdminAuthenticated,
+    activeView,
+    setActiveView,
+    logoutAdmin,
+  } = useShopStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isConfirmingReset, setIsConfirmingReset] = useState(false);
@@ -96,6 +110,40 @@ export function HeaderBar() {
         >
           CRT FX: {crtFxActive ? 'ON' : 'OFF'}
         </button>
+
+        {/* Panel Admina / Wylogowanie */}
+        {isAdminAuthenticated ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setActiveView(activeView === 'admin' ? 'shop' : 'admin')}
+              className={activeView === 'admin' ? 'btn-active' : ''}
+              title={
+                activeView === 'admin'
+                  ? 'Powróć do widoku sklepu'
+                  : 'Przełącz na panel administratora'
+              }
+            >
+              {activeView === 'admin' ? 'WIDOK: SKLEP' : 'PANEL ADMINA'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void logoutAdmin()}
+              className="btn-danger"
+              title="Wyloguj z sesji administratora"
+            >
+              WYLOGUJ ADMINA
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenLoginModal}
+            title="Otwórz autoryzację administratora"
+          >
+            PANEL ADMINA
+          </button>
+        )}
 
         {/* Import JSON */}
         <label htmlFor="import-json-input" className="sr-only">

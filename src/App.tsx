@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   HeaderBar,
   CatalogPanel,
@@ -6,12 +6,15 @@ import {
   CustomersPanel,
   CheckoutPanel,
   OrderHistoryPanel,
+  AdminLoginModal,
+  AdminPanel,
   StatusBar,
 } from '@/components';
 import { useShopStore } from '@/store/useShopStore';
 
 export default function App() {
-  const { isInitialized, initialize, settings } = useShopStore();
+  const { isInitialized, initialize, settings, activeView, isAdminAuthenticated } = useShopStore();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   useEffect(() => {
     void initialize();
@@ -34,29 +37,39 @@ export default function App() {
   }
 
   const crtClassName = settings.crtFx ? 'crt-fx-enabled' : '';
+  const showAdminView = activeView === 'admin' && isAdminAuthenticated;
 
   return (
     <div className={`retro-app ${crtClassName}`}>
-      <HeaderBar />
+      <HeaderBar onOpenLoginModal={() => setIsLoginModalOpen(true)} />
 
       <main className="retro-main">
-        <div className="terminal-grid">
-          {/* Lewa kolumna: Katalog produktów oraz Historia zamówień */}
-          <div className="terminal-column">
-            <CatalogPanel />
-            <OrderHistoryPanel />
-          </div>
+        {showAdminView ? (
+          <AdminPanel />
+        ) : (
+          <div className="terminal-grid">
+            {/* Lewa kolumna: Katalog produktów oraz Historia zamówień */}
+            <div className="terminal-column">
+              <CatalogPanel />
+              <OrderHistoryPanel />
+            </div>
 
-          {/* Prawa kolumna: Baza klientów, Koszyk oraz Kasa */}
-          <div className="terminal-column">
-            <CustomersPanel />
-            <CartPanel />
-            <CheckoutPanel />
+            {/* Prawa kolumna: Baza klientów, Koszyk oraz Kasa */}
+            <div className="terminal-column">
+              <CustomersPanel />
+              <CartPanel />
+              <CheckoutPanel />
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       <StatusBar />
+
+      <AdminLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
     </div>
   );
 }

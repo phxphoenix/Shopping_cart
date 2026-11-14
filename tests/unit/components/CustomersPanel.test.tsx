@@ -13,6 +13,7 @@ describe('CustomersPanel component', () => {
         { id: 'c2', name: 'Anna Nowak', email: 'anna@example.com' },
       ],
       selectedCustomerId: 'c1',
+      unlockedCustomerEmails: {},
     });
   });
 
@@ -61,13 +62,35 @@ describe('CustomersPanel component', () => {
     expect(useShopStore.getState().selectedCustomerId).toBe('c2');
   });
 
-  it('removes a customer when clicking USUŃ', async () => {
-    const user = userEvent.setup();
+  it('does NOT render USUŃ button in public view and shows admin notice', () => {
+    useShopStore.setState({ isAdminAuthenticated: false });
     render(<CustomersPanel />);
 
-    const deleteBtn = screen.getByRole('button', { name: /Usuń klienta Anna Nowak/i });
-    await user.click(deleteBtn);
+    expect(screen.queryByRole('button', { name: /USUŃ/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Usuń klienta/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Usuwanie kont klientów jest dostępne wyłącznie dla uprawnionych sesji w Panelu Administracyjnym/i
+      )
+    ).toBeInTheDocument();
+  });
 
-    expect(useShopStore.getState().customers.some((c) => c.id === 'c2')).toBe(false);
+  it('masks email addresses for unauthorized public sessions', () => {
+    useShopStore.setState({ isAdminAuthenticated: false, unlockedCustomerEmails: {} });
+    render(<CustomersPanel />);
+
+    expect(screen.getAllByText(/j\*\*\*n@example\.com/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/\(a\*\*\*a@example\.com\)/i)).toBeInTheDocument();
+  });
+
+  it('unmasks email for customers registered in the current session', () => {
+    useShopStore.setState({
+      isAdminAuthenticated: false,
+      unlockedCustomerEmails: { c1: 'jan@example.com' },
+    });
+    render(<CustomersPanel />);
+
+    expect(screen.getAllByText(/\(jan@example\.com\)/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/\(a\*\*\*a@example\.com\)/i)).toBeInTheDocument();
   });
 });
