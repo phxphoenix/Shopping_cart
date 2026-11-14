@@ -5,6 +5,7 @@
  * Zero private personal data and strictly ZERO CVV / plaintext card numbers.
  */
 
+import { DEFAULT_CATEGORIES, DEFAULT_CATALOG } from '../domain/catalog';
 import { toCents } from '../domain/money';
 import type { Customer, Order, PersistedShopState } from '../domain/schemas';
 
@@ -70,7 +71,7 @@ export function createSeedState(): PersistedShopState {
   };
 
   return {
-    version: 2,
+    version: 3,
     exportedAt: '2026-11-13T10:00:00.000Z',
     customers: [customer1, customer2],
     orders: [order1, order2],
@@ -79,5 +80,7 @@ export function createSeedState(): PersistedShopState {
     settings: {
       crtFx: true,
     },
+    categories: [...DEFAULT_CATEGORIES],
+    catalog: [...DEFAULT_CATALOG],
   };
 }

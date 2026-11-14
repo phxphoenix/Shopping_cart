@@ -10,7 +10,8 @@ import { PersistedShopStateSchema, type PersistedShopState } from '@/domain/sche
 import { del, get, set } from 'idb-keyval';
 import type { StorageAdapter } from './adapter';
 
-export const DEFAULT_STORAGE_KEY = 'shopping_cart_retro_v2';
+export const DEFAULT_STORAGE_KEY = 'shopping_cart_retro_v3';
+export const LEGACY_STORAGE_KEY_V2 = 'shopping_cart_retro_v2';
 
 export function isIndexedDbAvailable(): boolean {
   try {
@@ -78,6 +79,38 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
       }
     }
 
+    // 3. Fall back to legacy v2 key if primary v3 key is not present
+    if (this.key === DEFAULT_STORAGE_KEY) {
+      if (isIndexedDbAvailable()) {
+        try {
+          const legacyData = await get<unknown>(LEGACY_STORAGE_KEY_V2);
+          if (legacyData !== undefined && legacyData !== null) {
+            const parsed = PersistedShopStateSchema.safeParse(legacyData);
+            if (parsed.success) {
+              return parsed.data;
+            }
+          }
+        } catch {
+          // Ignore legacy read errors
+        }
+      }
+
+      if (isLocalStorageAvailable()) {
+        try {
+          const raw = localStorage.getItem(LEGACY_STORAGE_KEY_V2);
+          if (raw) {
+            const json = JSON.parse(raw);
+            const parsed = PersistedShopStateSchema.safeParse(json);
+            if (parsed.success) {
+              return parsed.data;
+            }
+          }
+        } catch {
+          // Ignore legacy read errors
+        }
+      }
+    }
+
     return null;
   }
 
@@ -124,6 +157,9 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
     if (isIndexedDbAvailable()) {
       try {
         await del(this.key);
+        if (this.key === DEFAULT_STORAGE_KEY) {
+          await del(LEGACY_STORAGE_KEY_V2);
+        }
       } catch {
         // Ignore IDB delete errors
       }
@@ -132,6 +168,9 @@ export class IndexedDbStorageAdapter implements StorageAdapter {
     if (isLocalStorageAvailable()) {
       try {
         localStorage.removeItem(this.key);
+        if (this.key === DEFAULT_STORAGE_KEY) {
+          localStorage.removeItem(LEGACY_STORAGE_KEY_V2);
+        }
       } catch {
         // Ignore localStorage remove errors
       }

@@ -7,6 +7,7 @@ import { useShopStore } from '@/store/useShopStore';
 describe('CustomersPanel component', () => {
   beforeEach(() => {
     useShopStore.setState({
+      isAdminAuthenticated: true,
       customers: [
         { id: 'c1', name: 'Jan Kowalski', email: 'jan@example.com' },
         { id: 'c2', name: 'Anna Nowak', email: 'anna@example.com' },

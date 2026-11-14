@@ -3,3 +3,4 @@
  */
 
 export * from './useShopStore';
+export * from './apiClient';

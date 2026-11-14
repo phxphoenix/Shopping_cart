@@ -3,11 +3,15 @@ import { PersistedShopStateSchema } from '@/domain/schemas';
 import { createSeedState } from '@/storage/seed';
 
 describe('storage/seed', () => {
-  it('creates a valid seed state complying with PersistedShopStateSchema v2', () => {
+  it('creates a valid seed state complying with PersistedShopStateSchema v3', () => {
     const seed = createSeedState();
     const result = PersistedShopStateSchema.safeParse(seed);
     expect(result.success).toBe(true);
-    expect(seed.version).toBe(2);
+    expect(seed.version).toBe(3);
+    expect(seed.categories).toBeDefined();
+    expect(seed.categories?.length).toBeGreaterThanOrEqual(6);
+    expect(seed.catalog).toBeDefined();
+    expect(seed.catalog?.length).toBeGreaterThanOrEqual(8);
   });
 
   it('contains sanitized demo customers with zero private personal data', () => {

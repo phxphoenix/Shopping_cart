@@ -39,6 +39,7 @@ describe('CustomersPanel UI Integration', () => {
 
   beforeEach(() => {
     useShopStore.setState({
+      isAdminAuthenticated: true,
       customers: [...initialCustomers],
       selectedCustomerId: 'c-1',
       orders: [existingOrder],
