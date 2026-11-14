@@ -40,6 +40,6 @@
     /* Types */
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },
-  "include": ["src", "tests", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
+  "include": ["src", "api", "tests", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
   "exclude": ["node_modules", "dist", "legacy", "coverage"]
 }
