@@ -7,8 +7,8 @@
  */
 
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
-import { DEFAULT_CATEGORIES, DEFAULT_CATALOG } from '../domain/catalog';
-import { createSeedState } from '../storage/seed';
+import { DEFAULT_CATEGORIES, DEFAULT_CATALOG } from '../domain/catalog.js';
+import { createSeedState } from '../storage/seed.js';
 
 let cachedSql: NeonQueryFunction<false, false> | null = null;
 

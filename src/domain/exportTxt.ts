@@ -6,8 +6,8 @@
  * Ensures zero PCI-DSS exposure (no CVVs, only masked payment summaries).
  */
 
-import { type Cents, addCents, formatPLN, toCents } from './money';
-import type { SafePaymentInfo } from './payment';
+import { type Cents, addCents, formatPLN, toCents } from './money.js';
+import type { SafePaymentInfo } from './payment.js';
 
 export interface ExportOrderItem {
   readonly name: string;

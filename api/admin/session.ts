@@ -16,8 +16,8 @@ import {
   getClientIp,
   isAdminRequest,
   verifyAdminPassword,
-} from '../../src/server/auth';
-import { errorResponse, jsonResponse, parseJsonBody } from '../../src/server/http';
+} from '../../src/server/auth.js';
+import { errorResponse, jsonResponse, parseJsonBody } from '../../src/server/http.js';
 
 export async function GET(request: Request): Promise<Response> {
   try {

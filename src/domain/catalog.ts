@@ -6,7 +6,7 @@
  * search, filter, CRUD, and migration operations.
  */
 
-import { type Cents, toCents } from './money';
+import { type Cents, toCents } from './money.js';
 
 export const DEFAULT_CATEGORY_ID = 'cat-default';
 

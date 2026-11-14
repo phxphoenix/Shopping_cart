@@ -10,17 +10,22 @@ import {
   maskCustomerEmail,
   RegisterCustomerInputSchema,
   validateUniqueCustomerEmail,
-} from '../src/domain/customer';
-import { generateDomainId, type Customer } from '../src/domain/schemas';
+} from '../src/domain/customer.js';
+import { generateDomainId, type Customer } from '../src/domain/schemas.js';
 import {
   checkRateLimit,
   CUSTOMER_REGISTER_MAX_ATTEMPTS,
   CUSTOMER_REGISTER_WINDOW_MS,
   getClientIp,
   isAdminRequest,
-} from '../src/server/auth';
-import { errorResponse, extractResourceId, jsonResponse, parseJsonBody } from '../src/server/http';
-import { getRepository } from '../src/server/repository';
+} from '../src/server/auth.js';
+import {
+  errorResponse,
+  extractResourceId,
+  jsonResponse,
+  parseJsonBody,
+} from '../src/server/http.js';
+import { getRepository } from '../src/server/repository.js';
 
 export async function GET(request: Request): Promise<Response> {
   try {

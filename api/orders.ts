@@ -8,12 +8,22 @@
  * DELETE: Delete order
  */
 
-import { DELIVERY_COST_CENTS, FREE_DELIVERY_THRESHOLD_CENTS } from '../src/domain/cart';
-import { toCents } from '../src/domain/money';
-import { validatePayment, type PaymentInput, type SafePaymentInfo } from '../src/domain/payment';
-import { generateDomainId, type Customer, type Order, type OrderItem } from '../src/domain/schemas';
-import { errorResponse, extractResourceId, jsonResponse, parseJsonBody } from '../src/server/http';
-import { getRepository } from '../src/server/repository';
+import { DELIVERY_COST_CENTS, FREE_DELIVERY_THRESHOLD_CENTS } from '../src/domain/cart.js';
+import { toCents } from '../src/domain/money.js';
+import { validatePayment, type PaymentInput, type SafePaymentInfo } from '../src/domain/payment.js';
+import {
+  generateDomainId,
+  type Customer,
+  type Order,
+  type OrderItem,
+} from '../src/domain/schemas.js';
+import {
+  errorResponse,
+  extractResourceId,
+  jsonResponse,
+  parseJsonBody,
+} from '../src/server/http.js';
+import { getRepository } from '../src/server/repository.js';
 
 interface PlaceOrderItemInput {
   readonly id?: string;

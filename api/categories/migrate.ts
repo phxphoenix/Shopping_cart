@@ -4,9 +4,9 @@
  * Bulk migration of products between categories (Admin only).
  */
 
-import { isAdminRequest } from '../../src/server/auth';
-import { errorResponse, jsonResponse, parseJsonBody } from '../../src/server/http';
-import { getRepository } from '../../src/server/repository';
+import { isAdminRequest } from '../../src/server/auth.js';
+import { errorResponse, jsonResponse, parseJsonBody } from '../../src/server/http.js';
+import { getRepository } from '../../src/server/repository.js';
 
 interface MigrateRequestBody {
   readonly sourceCategoryId: string;

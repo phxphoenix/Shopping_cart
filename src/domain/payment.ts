@@ -9,7 +9,7 @@
  * - Only masked card format (`**** **** **** 1234`) and last 4 digits are retained.
  */
 
-import { type Cents, toCents } from './money';
+import { type Cents, toCents } from './money.js';
 
 /** Fixed exchange rate: 1 BTC = 250 000.00 PLN (matching legacy/payments.py) */
 export const BTC_RATE_PLN = 250000;

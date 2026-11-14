@@ -7,10 +7,15 @@
  * DELETE: Delete category with automatic product migration to fallback category (Admin only)
  */
 
-import { isAdminRequest } from '../src/server/auth';
-import { errorResponse, extractResourceId, jsonResponse, parseJsonBody } from '../src/server/http';
-import { getRepository } from '../src/server/repository';
-import type { AddCategoryInput, UpdateCategoryPatch } from '../src/domain/catalog';
+import { isAdminRequest } from '../src/server/auth.js';
+import {
+  errorResponse,
+  extractResourceId,
+  jsonResponse,
+  parseJsonBody,
+} from '../src/server/http.js';
+import { getRepository } from '../src/server/repository.js';
+import type { AddCategoryInput, UpdateCategoryPatch } from '../src/domain/catalog.js';
 
 export async function GET(): Promise<Response> {
   try {

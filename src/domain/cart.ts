@@ -6,8 +6,8 @@
  * Standard delivery cost: 15.00 PLN (1 500 groszy).
  */
 
-import type { Product } from './catalog';
-import { type Cents, addCents, multiplyCents, subtractCents, toCents } from './money';
+import type { Product } from './catalog.js';
+import { type Cents, addCents, multiplyCents, subtractCents, toCents } from './money.js';
 
 /** Free delivery threshold in grosze (200.00 PLN) */
 export const FREE_DELIVERY_THRESHOLD_CENTS: Cents = toCents(20000);

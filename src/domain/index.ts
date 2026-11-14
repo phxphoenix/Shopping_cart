@@ -4,10 +4,10 @@
  * 100% pure TypeScript domain logic. Zero React or DOM dependencies.
  */
 
-export * from './money';
-export * from './catalog';
-export * from './cart';
-export * from './payment';
-export * from './exportTxt';
-export * from './schemas';
-export * from './customer';
+export * from './money.js';
+export * from './catalog.js';
+export * from './cart.js';
+export * from './payment.js';
+export * from './exportTxt.js';
+export * from './schemas.js';
+export * from './customer.js';

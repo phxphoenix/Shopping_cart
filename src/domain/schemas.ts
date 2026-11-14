@@ -16,9 +16,9 @@ import {
   DEFAULT_CATALOG,
   type Category,
   type Product,
-} from './catalog';
-import { type Cents, plnToCents, toCents } from './money';
-import { BTC_RATE_PLN, type SafePaymentInfo, centsToBtcString, maskCardNumber } from './payment';
+} from './catalog.js';
+import { type Cents, plnToCents, toCents } from './money.js';
+import { BTC_RATE_PLN, type SafePaymentInfo, centsToBtcString, maskCardNumber } from './payment.js';
 
 /**
  * Universal portable ID generator (zero DOM or browser-specific dependencies).

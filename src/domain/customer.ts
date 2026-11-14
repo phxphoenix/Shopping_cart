@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import type { Customer } from './schemas';
+import type { Customer } from './schemas.js';
 
 /**
  * Zod schema for new customer registration.

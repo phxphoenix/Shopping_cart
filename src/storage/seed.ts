@@ -5,9 +5,9 @@
  * Zero private personal data and strictly ZERO CVV / plaintext card numbers.
  */
 
-import { DEFAULT_CATEGORIES, DEFAULT_CATALOG } from '../domain/catalog';
-import { toCents } from '../domain/money';
-import type { Customer, Order, PersistedShopState } from '../domain/schemas';
+import { DEFAULT_CATEGORIES, DEFAULT_CATALOG } from '../domain/catalog.js';
+import { toCents } from '../domain/money.js';
+import type { Customer, Order, PersistedShopState } from '../domain/schemas.js';
 
 export function createSeedState(): PersistedShopState {
   const customer1: Customer = {

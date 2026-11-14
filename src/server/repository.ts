@@ -25,11 +25,11 @@ import {
   migrateProductsBetweenCategories,
   updateCategoryInList,
   updateProductInList,
-} from '../domain/catalog';
-import { toCents } from '../domain/money';
-import type { Customer, Order } from '../domain/schemas';
-import { createSeedState } from '../storage/seed';
-import { ensureSchemaAndSeed, getNeonSql } from './db';
+} from '../domain/catalog.js';
+import { toCents } from '../domain/money.js';
+import type { Customer, Order } from '../domain/schemas.js';
+import { createSeedState } from '../storage/seed.js';
+import { ensureSchemaAndSeed, getNeonSql } from './db.js';
 
 export interface ShopRepository {
   // Categories

@@ -6,11 +6,11 @@
  * POST: Administrative bulk operations: resetDemo or importBackup (Admin only).
  */
 
-import { maskCustomerEmail } from '../src/domain/customer';
-import { parseLegacyOrCurrentBackup } from '../src/domain/schemas';
-import { isAdminRequest } from '../src/server/auth';
-import { errorResponse, jsonResponse, parseJsonBody } from '../src/server/http';
-import { getRepository } from '../src/server/repository';
+import { maskCustomerEmail } from '../src/domain/customer.js';
+import { parseLegacyOrCurrentBackup } from '../src/domain/schemas.js';
+import { isAdminRequest } from '../src/server/auth.js';
+import { errorResponse, jsonResponse, parseJsonBody } from '../src/server/http.js';
+import { getRepository } from '../src/server/repository.js';
 
 export async function GET(request: Request): Promise<Response> {
   try {
