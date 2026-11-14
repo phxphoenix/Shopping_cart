@@ -103,3 +103,49 @@ export function formatPLN(cents: Cents | number, options: FormatPlnOptions = {})
 
   return `${sign}${zlotysFormatted},${groszeFormatted} ${currency}`;
 }
+
+/**
+ * Parses a user-input PLN string into integer Cents without floating-point math.
+ *
+ * Accepted formats: "199.99", "199,99", "199.9", "199", with optional leading/trailing whitespace.
+ * Rejects empty strings, negative amounts, more than 2 decimal places, or non-numeric characters.
+ */
+export function parsePlnInputToCents(rawInput: string): Cents {
+  const trimmed = rawInput.trim();
+
+  if (!trimmed) {
+    throw new Error('Kwota nie może być pusta.');
+  }
+
+  if (trimmed.startsWith('-') || trimmed.includes('-')) {
+    throw new RangeError('Kwota nie może być ujemna.');
+  }
+
+  const match = trimmed.match(/^(\d+)(?:[.,](\d{1,2}))?$/);
+  if (!match) {
+    if (/[.,]\d{3,}$/.test(trimmed)) {
+      throw new RangeError('Kwota nie może mieć więcej niż 2 miejsca po przecinku.');
+    }
+    throw new Error(
+      'Nieprawidłowy format kwoty. Wprowadź liczbę nieujemną (np. 199.99 lub 199,99).'
+    );
+  }
+
+  const wholeStr = match[1]!;
+  const fracStr = match[2] ?? '';
+
+  const whole = Number.parseInt(wholeStr, 10);
+  if (!Number.isSafeInteger(whole)) {
+    throw new RangeError('Kwota przekracza maksymalną dopuszczalną wartość.');
+  }
+
+  const frac = fracStr.length > 0 ? Number.parseInt(fracStr.padEnd(2, '0'), 10) : 0;
+  const totalCents = whole * 100 + frac;
+
+  if (!Number.isSafeInteger(totalCents)) {
+    throw new RangeError('Kwota przekracza maksymalną dopuszczalną wartość.');
+  }
+
+  return toCents(totalCents);
+}
+

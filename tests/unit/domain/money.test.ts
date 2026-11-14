@@ -5,6 +5,7 @@ import {
   formatPLN,
   isCents,
   multiplyCents,
+  parsePlnInputToCents,
   plnToCents,
   subtractCents,
   toCents,
@@ -128,6 +129,72 @@ describe('domain/money', () => {
     it('handles non-finite input gracefully by returning fallback', () => {
       expect(formatPLN(NaN)).toBe('0,00 zł');
       expect(formatPLN(Infinity)).toBe('0,00 zł');
+    });
+  });
+
+  describe('parsePlnInputToCents (Strict Integer Parsing without Floats)', () => {
+    it('correctly parses dot-separated amounts', () => {
+      expect(parsePlnInputToCents('199.99')).toBe(19999);
+      expect(parsePlnInputToCents('199.9')).toBe(19990);
+      expect(parsePlnInputToCents('199.0')).toBe(19900);
+      expect(parsePlnInputToCents('199.00')).toBe(19900);
+      expect(parsePlnInputToCents('0.05')).toBe(5);
+      expect(parsePlnInputToCents('0.50')).toBe(50);
+      expect(parsePlnInputToCents('3499.99')).toBe(349999);
+    });
+
+    it('correctly parses comma-separated amounts', () => {
+      expect(parsePlnInputToCents('199,99')).toBe(19999);
+      expect(parsePlnInputToCents('199,9')).toBe(19990);
+      expect(parsePlnInputToCents('0,05')).toBe(5);
+      expect(parsePlnInputToCents('0,5')).toBe(50);
+      expect(parsePlnInputToCents('15,00')).toBe(1500);
+    });
+
+    it('correctly parses integer amounts without decimal parts', () => {
+      expect(parsePlnInputToCents('199')).toBe(19900);
+      expect(parsePlnInputToCents('0')).toBe(0);
+      expect(parsePlnInputToCents('200')).toBe(20000);
+      expect(parsePlnInputToCents('15')).toBe(1500);
+    });
+
+    it('ignores leading and trailing whitespace', () => {
+      expect(parsePlnInputToCents('   199.99   ')).toBe(19999);
+      expect(parsePlnInputToCents('\t199,99\n')).toBe(19999);
+      expect(parsePlnInputToCents('  200  ')).toBe(20000);
+    });
+
+    it('throws Error for empty or whitespace-only strings', () => {
+      expect(() => parsePlnInputToCents('')).toThrow(/Kwota nie może być pusta/);
+      expect(() => parsePlnInputToCents('   ')).toThrow(/Kwota nie może być pusta/);
+      expect(() => parsePlnInputToCents('\t\n')).toThrow(/Kwota nie może być pusta/);
+    });
+
+    it('throws RangeError for negative amounts', () => {
+      expect(() => parsePlnInputToCents('-10')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents('-10.50')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents(' -0.01 ')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents('-0,50')).toThrow(RangeError);
+    });
+
+    it('throws RangeError for amounts with more than 2 decimal places', () => {
+      expect(() => parsePlnInputToCents('199.999')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents('199,999')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents('0.005')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents('12.3456')).toThrow(RangeError);
+    });
+
+    it('throws Error for non-numeric or malformed strings', () => {
+      expect(() => parsePlnInputToCents('abc')).toThrow(/Nieprawidłowy format kwoty/);
+      expect(() => parsePlnInputToCents('12a')).toThrow(/Nieprawidłowy format kwoty/);
+      expect(() => parsePlnInputToCents('12.3.4')).toThrow(/Nieprawidłowy format kwoty/);
+      expect(() => parsePlnInputToCents('10 000')).toThrow(/Nieprawidłowy format kwoty/);
+      expect(() => parsePlnInputToCents('PLN 100')).toThrow(/Nieprawidłowy format kwoty/);
+    });
+
+    it('throws RangeError for excessively large numbers exceeding safe integer range', () => {
+      expect(() => parsePlnInputToCents('99999999999999999999999999')).toThrow(RangeError);
+      expect(() => parsePlnInputToCents('9007199254740990.00')).toThrow(RangeError);
     });
   });
 });

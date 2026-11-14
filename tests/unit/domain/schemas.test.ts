@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_CATEGORIES,
+  DEFAULT_CATEGORY_ID,
+  DEFAULT_CATALOG,
+} from '@/domain/catalog';
+import {
+  CategorySchema,
   CustomerSchema,
   OrderItemSchema,
   OrderSchema,
   PersistedShopStateSchema,
+  ProductSchema,
   generateDomainId,
   parseLegacyOrCurrentBackup,
 } from '@/domain/schemas';
@@ -114,6 +121,113 @@ describe('domain/schemas', () => {
       const result = PersistedShopStateSchema.safeParse(state);
       expect(result.success).toBe(true);
     });
+
+    it('validates complete shop state backup v3 with categories and catalog', () => {
+      const state = {
+        version: 3 as const,
+        exportedAt: '2026-11-14T12:00:00.000Z',
+        customers: [sampleOrder.customer],
+        orders: [sampleOrder],
+        categories: [...DEFAULT_CATEGORIES],
+        catalog: [...DEFAULT_CATALOG],
+      };
+      const result = PersistedShopStateSchema.safeParse(state);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.version).toBe(3);
+        expect(result.data.categories?.length).toBe(DEFAULT_CATEGORIES.length);
+        expect(result.data.catalog?.length).toBe(DEFAULT_CATALOG.length);
+      }
+    });
+  });
+
+  describe('CategorySchema', () => {
+    it('validates a valid category object', () => {
+      const valid = {
+        id: 'cat-custom',
+        name: 'Gry Retro',
+        slug: 'gry-retro',
+        description: 'Klasyczne gry na dyskietkach i kartridżach',
+        isDefault: false,
+      };
+      const result = CategorySchema.safeParse(valid);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects invalid category names (less than 2 or more than 50 chars)', () => {
+      expect(
+        CategorySchema.safeParse({ id: 'c1', name: 'A', description: 'Desc' }).success
+      ).toBe(false);
+
+      expect(
+        CategorySchema.safeParse({ id: 'c1', name: 'A'.repeat(51), description: 'Desc' }).success
+      ).toBe(false);
+    });
+
+    it('rejects category without an ID', () => {
+      expect(
+        CategorySchema.safeParse({ id: '', name: 'Gry', description: 'Desc' }).success
+      ).toBe(false);
+    });
+  });
+
+  describe('ProductSchema (Dynamic Category & Automatic categoryId Resolution)', () => {
+    it('validates a product with both category and categoryId', () => {
+      const valid = {
+        id: 'p-1',
+        sku: 'SKU-01',
+        name: 'Modem',
+        priceCents: 12000,
+        categoryId: 'cat-retro-hardware',
+        category: 'Retro Hardware',
+        description: 'Opis',
+        inStock: true,
+        stockQuantity: 5,
+      };
+      const result = ProductSchema.safeParse(valid);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.categoryId).toBe('cat-retro-hardware');
+        expect(result.data.category).toBe('Retro Hardware');
+      }
+    });
+
+    it('automatically resolves categoryId from DEFAULT_CATEGORIES if missing (legacy v2 compatibility)', () => {
+      const legacyProduct = {
+        id: 'p-legacy-1',
+        sku: 'LEG-01',
+        name: 'Laptop Retro',
+        priceCents: 349999,
+        category: 'Elektronika', // categoryId omitted!
+        description: 'Opis',
+        inStock: true,
+        stockQuantity: 10,
+      };
+      const result = ProductSchema.safeParse(legacyProduct);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.categoryId).toBe('cat-elektronika');
+        expect(result.data.category).toBe('Elektronika');
+      }
+    });
+
+    it('falls back to DEFAULT_CATEGORY_ID when category name is not in DEFAULT_CATEGORIES and categoryId is omitted', () => {
+      const customCategoryProduct = {
+        id: 'p-custom-1',
+        sku: 'CUST-01',
+        name: 'Rzadki Artefakt',
+        priceCents: 50000,
+        category: 'Nietypowa Kategoria',
+        description: 'Opis',
+        inStock: true,
+        stockQuantity: 1,
+      };
+      const result = ProductSchema.safeParse(customCategoryProduct);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.categoryId).toBe(DEFAULT_CATEGORY_ID);
+      }
+    });
   });
 
   describe('generateDomainId', () => {
@@ -182,6 +296,46 @@ describe('domain/schemas', () => {
       expect(parsed.version).toBe(2);
       expect(parsed.orders.length).toBe(1);
       expect(parsed.orders[0]?.subtotalCents).toBe(349999);
+      expect(parsed.categories).toBeDefined();
+      expect(parsed.categories?.length).toBe(DEFAULT_CATEGORIES.length);
+      expect(parsed.catalog).toBeDefined();
+      expect(parsed.catalog?.length).toBe(DEFAULT_CATALOG.length);
+    });
+
+    it('parses a modern v3 backup with custom categories and products', () => {
+      const v3Json = JSON.stringify({
+        version: 3,
+        exportedAt: '2026-11-14T12:00:00.000Z',
+        customers: [{ id: 'c1', name: 'Jan', email: 'jan@example.com' }],
+        orders: [],
+        categories: [
+          {
+            id: 'cat-custom',
+            name: 'Moja Kategoria',
+            description: 'Kategoria v3',
+          },
+        ],
+        catalog: [
+          {
+            id: 'prod-v3',
+            sku: 'V3-SKU',
+            name: 'Produkt V3',
+            priceCents: 9999,
+            categoryId: 'cat-custom',
+            category: 'Moja Kategoria',
+            description: 'Desc',
+            inStock: true,
+            stockQuantity: 5,
+          },
+        ],
+      });
+
+      const parsed = parseLegacyOrCurrentBackup(v3Json);
+      expect(parsed.version).toBe(3);
+      expect(parsed.categories?.length).toBe(1);
+      expect(parsed.categories?.[0]?.name).toBe('Moja Kategoria');
+      expect(parsed.catalog?.length).toBe(1);
+      expect(parsed.catalog?.[0]?.sku).toBe('V3-SKU');
     });
 
     it('rejects corrupt or non-object JSON inputs with a descriptive error', () => {

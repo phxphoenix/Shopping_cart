@@ -10,6 +10,13 @@
  */
 
 import { z } from 'zod';
+import {
+  DEFAULT_CATEGORIES,
+  DEFAULT_CATEGORY_ID,
+  DEFAULT_CATALOG,
+  type Category,
+  type Product,
+} from './catalog';
 import { type Cents, plnToCents, toCents } from './money';
 import { BTC_RATE_PLN, type SafePaymentInfo, centsToBtcString, maskCardNumber } from './payment';
 
@@ -99,29 +106,49 @@ export const OrderSchema = z.object({
 });
 export type Order = z.infer<typeof OrderSchema>;
 
-export const ProductCategorySchema = z.enum([
-  'Elektronika',
-  'Odziez',
-  'Akcesoria',
-  'Edukacja',
-  'Retro Hardware',
-]);
-export type ProductCategoryState = z.infer<typeof ProductCategorySchema>;
-
-export const ProductSchema = z.object({
-  id: z.string().min(1),
-  sku: z.string().min(1),
-  name: z.string().min(1),
-  priceCents: z
-    .number()
-    .int()
-    .nonnegative()
-    .transform((val) => toCents(val)),
-  category: ProductCategorySchema,
-  description: z.string(),
-  inStock: z.boolean(),
-  stockQuantity: z.number().int(),
+export const CategorySchema = z.object({
+  id: z.string().min(1, 'ID kategorii jest wymagane'),
+  name: z
+    .string()
+    .min(2, 'Nazwa kategorii musi zawierać od 2 do 50 znaków.')
+    .max(50, 'Nazwa kategorii musi zawierać od 2 do 50 znaków.'),
+  slug: z.string().optional(),
+  description: z.string().default(''),
+  isDefault: z.boolean().optional(),
 });
+export type CategoryState = z.infer<typeof CategorySchema>;
+
+export const ProductCategorySchema = z.string().min(1);
+export type ProductCategoryState = string;
+
+export const ProductSchema = z
+  .object({
+    id: z.string().min(1),
+    sku: z.string().min(1),
+    name: z.string().min(1),
+    priceCents: z
+      .number()
+      .int()
+      .nonnegative()
+      .transform((val) => toCents(val)),
+    category: z.string().min(1),
+    categoryId: z.string().min(1).optional(),
+    description: z.string(),
+    inStock: z.boolean(),
+    stockQuantity: z.number().int(),
+  })
+  .transform((prod) => {
+    if (prod.categoryId) {
+      return prod as Product;
+    }
+    const matched = DEFAULT_CATEGORIES.find(
+      (c) => c.name.toLowerCase() === prod.category.toLowerCase()
+    );
+    return {
+      ...prod,
+      categoryId: matched ? matched.id : DEFAULT_CATEGORY_ID,
+    } as Product;
+  });
 export type ProductState = z.infer<typeof ProductSchema>;
 
 export const CartItemSchema = z.object({
@@ -141,24 +168,28 @@ export const ShopSettingsSchema = z.object({
 export type ShopSettings = z.infer<typeof ShopSettingsSchema>;
 
 export const PersistedShopStateSchema = z.object({
-  version: z.literal(2),
+  version: z.union([z.literal(2), z.literal(3)]).default(2),
   exportedAt: z.string(),
   customers: z.array(CustomerSchema),
   orders: z.array(OrderSchema),
   cart: z.array(CartItemSchema).optional().default([]),
   selectedCustomerId: z.string().nullable().optional().default(null),
   settings: ShopSettingsSchema.optional().default({ crtFx: true }),
+  categories: z.array(CategorySchema).optional(),
+  catalog: z.array(ProductSchema).optional(),
 });
 export type PersistedShopState = z.infer<typeof PersistedShopStateSchema>;
 
 export interface ParsedBackupState {
-  readonly version: 2;
+  readonly version: 2 | 3;
   readonly exportedAt: string;
   readonly customers: readonly Customer[];
   readonly orders: readonly Order[];
   readonly cart?: readonly CartItemState[];
   readonly selectedCustomerId?: string | null;
   readonly settings?: ShopSettings;
+  readonly categories?: readonly Category[];
+  readonly catalog?: readonly Product[];
 }
 
 // ---------------------------------------------------------------------------
@@ -279,15 +310,20 @@ export function parseLegacyOrCurrentBackup(jsonString: string): ParsedBackupStat
 
   const rawObj = raw as Record<string, unknown>;
 
-  // Check if it's already a modern v2 backup
-  if (rawObj.version === 2) {
-    const v2Parse = PersistedShopStateSchema.safeParse(rawObj);
-    if (v2Parse.success) {
-      return v2Parse.data;
+  // Check if it's already a modern v2 or v3 backup
+  if (rawObj.version === 2 || rawObj.version === 3) {
+    const vParse = PersistedShopStateSchema.safeParse(rawObj);
+    if (vParse.success) {
+      const data = vParse.data;
+      return {
+        ...data,
+        categories: data.categories ?? [...DEFAULT_CATEGORIES],
+        catalog: data.catalog ?? [...DEFAULT_CATALOG],
+      };
     }
-    // If version is 2 but validation failed, throw detailed Zod error
+    // If version is 2 or 3 but validation failed, throw detailed Zod error
     throw new Error(
-      `Błąd walidacji kopii zapasowej v2: ${v2Parse.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')}`
+      `Błąd walidacji kopii zapasowej v${rawObj.version}: ${vParse.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')}`
     );
   }
 
@@ -449,5 +485,7 @@ export function parseLegacyOrCurrentBackup(jsonString: string): ParsedBackupStat
     cart: [],
     selectedCustomerId: customers[0]?.id ?? null,
     settings: { crtFx: true },
+    categories: [...DEFAULT_CATEGORIES],
+    catalog: [...DEFAULT_CATALOG],
   };
 }

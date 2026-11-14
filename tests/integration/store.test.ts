@@ -131,6 +131,7 @@ describe('Integration: Zustand Store + In-Memory Storage Adapter', () => {
         sku: 'CUST-01',
         name: 'Modem 56k V.90',
         priceCents: toCents(12900),
+        categoryId: 'cat-retro-hardware',
         category: 'Retro Hardware' as const,
         description: 'Klasyczny modem telefoniczny 56kbps.',
         inStock: true,

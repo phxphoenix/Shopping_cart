@@ -89,6 +89,10 @@ export function addItem(items: readonly CartItem[], product: Product, quantity =
     throw new RangeError(`Quantity must be a positive integer, received: ${quantity}`);
   }
 
+  if (!product.inStock || product.stockQuantity <= 0) {
+    throw new Error(`Produkt "${product.name}" jest obecnie niedostępny w magazynie.`);
+  }
+
   const existingIndex = items.findIndex((item) => item.product.id === product.id);
 
   if (existingIndex >= 0) {
@@ -132,6 +136,11 @@ export function updateQuantity(
     return removeItem(items, productId);
   }
 
+  const existing = items.find((item) => item.product.id === productId);
+  if (existing && (!existing.product.inStock || existing.product.stockQuantity <= 0)) {
+    throw new Error(`Produkt "${existing.product.name}" jest obecnie niedostępny w magazynie.`);
+  }
+
   return items.map((item) => {
     if (item.product.id !== productId) {
       return item;
@@ -157,3 +166,35 @@ export function removeItem(items: readonly CartItem[], productId: string): CartI
 export function clearCart(): CartItem[] {
   return [];
 }
+
+/**
+ * Synchronizes the cart with the latest product catalog:
+ * - Drops any cart items whose products no longer exist in the catalog or are out of stock (inStock: false or stockQuantity <= 0).
+ * - For remaining items, updates product details to the current catalog item.
+ * - Clamps cart item quantity to available stockQuantity if stock has decreased.
+ * - Recalculates lineTotalCents based on current price and clamped quantity.
+ */
+export function syncCartWithCatalog(
+  cart: readonly CartItem[],
+  catalog: readonly Product[]
+): CartItem[] {
+  const synced: CartItem[] = [];
+
+  for (const item of cart) {
+    const catalogProduct = catalog.find((p) => p.id === item.product.id);
+    if (!catalogProduct || !catalogProduct.inStock || catalogProduct.stockQuantity <= 0) {
+      continue;
+    }
+
+    const clampedQuantity = Math.min(item.quantity, catalogProduct.stockQuantity);
+
+    synced.push({
+      product: catalogProduct,
+      quantity: clampedQuantity,
+      lineTotalCents: multiplyCents(catalogProduct.priceCents, clampedQuantity),
+    });
+  }
+
+  return synced;
+}
+

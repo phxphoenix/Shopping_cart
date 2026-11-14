@@ -6,9 +6,10 @@ import {
   calculateTotals,
   clearCart,
   removeItem,
+  syncCartWithCatalog,
   updateQuantity,
 } from '@/domain/cart';
-import { DEFAULT_CATALOG } from '@/domain/catalog';
+import { DEFAULT_CATALOG, type Product } from '@/domain/catalog';
 import { toCents } from '@/domain/money';
 
 describe('domain/cart', () => {
@@ -116,6 +117,20 @@ describe('domain/cart', () => {
       expect(() => addItem([], tshirt, 1.5)).toThrow(RangeError);
       expect(() => addItem([], tshirt, NaN)).toThrow(RangeError);
     });
+
+    it('throws Error when attempting to add an out of stock product', () => {
+      const outOfStockProduct: Product = {
+        ...tshirt,
+        inStock: false,
+      };
+      expect(() => addItem([], outOfStockProduct, 1)).toThrow(/niedostępny/);
+
+      const zeroQuantityProduct: Product = {
+        ...tshirt,
+        stockQuantity: 0,
+      };
+      expect(() => addItem([], zeroQuantityProduct, 1)).toThrow(/niedostępny/);
+    });
   });
 
   describe('updateQuantity', () => {
@@ -146,6 +161,15 @@ describe('domain/cart', () => {
       expect(() => updateQuantity(initial, tshirt.id, -2)).toThrow(RangeError);
       expect(() => updateQuantity(initial, tshirt.id, 2.5)).toThrow(RangeError);
     });
+
+    it('throws Error when updating quantity of a product marked out of stock', () => {
+      const outOfStockItem = {
+        product: { ...tshirt, inStock: false },
+        quantity: 1,
+        lineTotalCents: tshirt.priceCents,
+      };
+      expect(() => updateQuantity([outOfStockItem], tshirt.id, 2)).toThrow(/niedostępny/);
+    });
   });
 
   describe('removeItem', () => {
@@ -171,6 +195,79 @@ describe('domain/cart', () => {
       items = addItem(items, laptop, 1);
       expect(items.length).toBe(2);
       expect(clearCart()).toEqual([]);
+    });
+  });
+
+  describe('syncCartWithCatalog (Reactive Cart Synchronization with Catalog Changes)', () => {
+    it('removes cart items when product is deleted from catalog', () => {
+      let cart = addItem([], tshirt, 2);
+      cart = addItem(cart, headphones, 1);
+
+      // Catalog with tshirt removed
+      const catalogWithoutTshirt = DEFAULT_CATALOG.filter((p) => p.id !== tshirt.id);
+      const synced = syncCartWithCatalog(cart, catalogWithoutTshirt);
+
+      expect(synced.length).toBe(1);
+      expect(synced[0]?.product.id).toBe(headphones.id);
+    });
+
+    it('removes cart items when product is marked out of stock or stock is 0', () => {
+      let cart = addItem([], tshirt, 2);
+      cart = addItem(cart, headphones, 1);
+
+      const catalogWithOutOfStock = DEFAULT_CATALOG.map((p) => {
+        if (p.id === tshirt.id) {
+          return { ...p, inStock: false };
+        }
+        if (p.id === headphones.id) {
+          return { ...p, stockQuantity: 0 };
+        }
+        return p;
+      });
+
+      const synced = syncCartWithCatalog(cart, catalogWithOutOfStock);
+      expect(synced.length).toBe(0);
+    });
+
+    it('clamps cart item quantity when catalog stock decreases below current cart quantity', () => {
+      // Add 10 tshirts to cart
+      const cart = addItem([], tshirt, 10);
+
+      // Catalog reduced to 4 tshirts
+      const catalogReducedStock = DEFAULT_CATALOG.map((p) => {
+        if (p.id === tshirt.id) {
+          return { ...p, stockQuantity: 4 };
+        }
+        return p;
+      });
+
+      const synced = syncCartWithCatalog(cart, catalogReducedStock);
+      expect(synced.length).toBe(1);
+      expect(synced[0]?.quantity).toBe(4);
+      expect(synced[0]?.lineTotalCents).toBe(tshirt.priceCents * 4);
+    });
+
+    it('updates product metadata (price, name, category) and recalculates line total', () => {
+      const cart = addItem([], tshirt, 2);
+
+      const catalogUpdated = DEFAULT_CATALOG.map((p) => {
+        if (p.id === tshirt.id) {
+          return {
+            ...p,
+            name: 'Nowa Koszulka Retro',
+            priceCents: toCents(9999),
+            category: 'Nowa Kategoria',
+          };
+        }
+        return p;
+      });
+
+      const synced = syncCartWithCatalog(cart, catalogUpdated);
+      expect(synced.length).toBe(1);
+      expect(synced[0]?.product.name).toBe('Nowa Koszulka Retro');
+      expect(synced[0]?.product.priceCents).toBe(9999);
+      expect(synced[0]?.product.category).toBe('Nowa Kategoria');
+      expect(synced[0]?.lineTotalCents).toBe(9999 * 2);
     });
   });
 });

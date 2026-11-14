@@ -10,3 +10,4 @@ export * from './cart';
 export * from './payment';
 export * from './exportTxt';
 export * from './schemas';
+export * from './customer';

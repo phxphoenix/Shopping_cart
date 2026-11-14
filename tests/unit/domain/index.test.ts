@@ -11,15 +11,33 @@ describe('domain/index (public API barrel)', () => {
     expect(typeof domain.subtractCents).toBe('function');
     expect(typeof domain.multiplyCents).toBe('function');
     expect(typeof domain.formatPLN).toBe('function');
+    expect(typeof domain.parsePlnInputToCents).toBe('function');
 
     // Catalog
     expect(Array.isArray(domain.DEFAULT_CATALOG)).toBe(true);
     expect(domain.DEFAULT_CATALOG.length).toBeGreaterThanOrEqual(5);
     expect(domain.ORIGINAL_PRODUCT_SKUS.size).toBe(5);
+    expect(domain.DEFAULT_CATEGORY_ID).toBe('cat-default');
+    expect(Array.isArray(domain.DEFAULT_CATEGORIES)).toBe(true);
+    expect(domain.DEFAULT_CATEGORIES.length).toBeGreaterThanOrEqual(6);
     expect(typeof domain.findProductById).toBe('function');
     expect(typeof domain.findProductBySku).toBe('function');
     expect(typeof domain.filterByCategory).toBe('function');
     expect(typeof domain.searchProducts).toBe('function');
+    expect(typeof domain.slugify).toBe('function');
+    expect(typeof domain.addCategoryToList).toBe('function');
+    expect(typeof domain.createCategory).toBe('function');
+    expect(typeof domain.updateCategoryInList).toBe('function');
+    expect(typeof domain.updateCategory).toBe('function');
+    expect(typeof domain.deleteCategoryFromList).toBe('function');
+    expect(typeof domain.deleteCategoryWithFallback).toBe('function');
+    expect(typeof domain.migrateProductsBetweenCategories).toBe('function');
+    expect(typeof domain.addProductToList).toBe('function');
+    expect(typeof domain.createProduct).toBe('function');
+    expect(typeof domain.updateProductInList).toBe('function');
+    expect(typeof domain.updateProduct).toBe('function');
+    expect(typeof domain.deleteProductFromList).toBe('function');
+    expect(typeof domain.deleteProduct).toBe('function');
 
     // Cart
     expect(domain.FREE_DELIVERY_THRESHOLD_CENTS).toBe(20000);
@@ -29,6 +47,14 @@ describe('domain/index (public API barrel)', () => {
     expect(typeof domain.updateQuantity).toBe('function');
     expect(typeof domain.removeItem).toBe('function');
     expect(typeof domain.clearCart).toBe('function');
+    expect(typeof domain.syncCartWithCatalog).toBe('function');
+
+    // Customer & Validation
+    expect(domain.RegisterCustomerInputSchema).toBeDefined();
+    expect(typeof domain.validateUniqueCustomerEmail).toBe('function');
+    expect(typeof domain.assertUniqueCustomerEmail).toBe('function');
+    expect(typeof domain.validateNewCustomerRegistration).toBe('function');
+    expect(typeof domain.maskCustomerEmail).toBe('function');
 
     // Payment
     expect(domain.BTC_RATE_PLN).toBe(250000);
