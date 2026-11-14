@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Retro Shopping Cart v2.0 - E2E Suite', () => {
-  test('Scenario 1: Application loads under /Shopping_cart/ with 0 console errors, 0 page errors, and 0 HTTP >= 400 responses', async ({
+  test('Scenario 1: Application loads under base path with 0 console errors, 0 page errors, and 0 HTTP >= 400 responses', async ({
     page,
   }) => {
     const consoleErrors: string[] = [];

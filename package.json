@@ -16,6 +16,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.1",
     "idb-keyval": "^6.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

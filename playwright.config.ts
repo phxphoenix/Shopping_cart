@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 4173;
-const BASE_URL = `http://localhost:${PORT}/Shopping_cart/`;
+const BASE_PATH = process.env.VITE_BASE_PATH ?? '/';
+const normalizedBasePath = BASE_PATH.endsWith('/') ? BASE_PATH : `${BASE_PATH}/`;
+const BASE_URL = `http://localhost:${PORT}${normalizedBasePath}`;
 
 export default defineConfig({
   testDir: './tests/e2e',

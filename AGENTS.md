@@ -1,9 +1,9 @@
 # Reguły Projektu dla Agentów AI (AGENTS.md)
 
-Projekt: **Shopping Cart (Retro CRT v2.0)**  
+Projekt: **Shopping Cart (Retro CRT v3.0)**  
 Repozytorium docelowe: `https://github.com/phxphoenix/Shopping_cart`  
-Branch roboczy: `modernization/v2`  
-Główny plan wykonawczy: [MODERNIZATION_PLAN.md](file:///c:/Users/phxpo/OneDrive/Dokumenty/Dev/Shopping%20cart/MODERNIZATION_PLAN.md)
+Branch roboczy: `feat/admin-catalog-v3`  
+Główny plan wykonawczy: [ADMIN_CATALOG_PLAN.md](file:///c:/Users/phxpo/OneDrive/Dokumenty/Dev/Shopping%20cart/ADMIN_CATALOG_PLAN.md) (plan bazowy v2: [MODERNIZATION_PLAN.md](file:///c:/Users/phxpo/OneDrive/Dokumenty/Dev/Shopping%20cart/MODERNIZATION_PLAN.md))
 
 Każdy agent AI pracujący w tym repozytorium **musi bezwzględnie przestrzegać** poniższych twardych reguł inżynieryjnych, standardów bezpieczeństwa i procedur jakości.
 
@@ -61,12 +61,14 @@ Każdy agent AI pracujący w tym repozytorium **musi bezwzględnie przestrzegać
 
 ---
 
-## 4. Środowisko Wdrożeniowe i Hosting
+## 4. Środowisko Wdrożeniowe i Hosting (v3.0)
 
-- **Platforma produkcyjna:** GitHub Pages (statyczny hosting 100% Client-Side).
-- **Ścieżka bazowa aplikacji:** `base: '/Shopping_cart/'` w `vite.config.ts`.
-- **Routing:** Hash routing lub obsługa przez `public/404.html` ze skryptem przekierowującym.
-- **Trwałość danych:** `IndexedDB` za pośrednictwem biblioteki `idb-keyval` z bezpiecznym fallbackiem do `localStorage` oraz mechanizmem wersjonowania schematu danych.
+- **Platforma produkcyjna:** Vercel (Hobby) + Neon Serverless Postgres (`@neondatabase/serverless` z leniwą inicjalizacją `getNeonSql()`, bez użycia `Proxy`), plus opcjonalny statyczny preview.
+- **Ścieżka bazowa aplikacji:** Domyślnie `'/'` w `vite.config.ts` (`process.env.VITE_BASE_PATH ?? '/'`), z możliwością nadpisania zmienną środowiskową.
+- **Architektura danych Dual-Mode:**
+  - `NeonShopRepository`: wykorzystywana automatycznie w środowisku z obecną zmienną `DATABASE_URL` (produkcja/preview Vercel oraz `vercel dev`).
+  - `InMemoryShopRepository`: wykorzystywana w testach jednostkowych, integracyjnych i środowisku lokalnym bez bazy danych (zapewnia 100% determinizm bez konieczności zewnętrznych usług w CI).
+  - Na kliencie: synchronizacja stanu z API serwera (`/api/*`) wraz z lokalną pamięcią `IndexedDB` (`idb-keyval`) jako odpornym cache i fallbackiem offline.
 - **Kompatybilność wsteczna:**
   - Obsługa importu i eksportu formatu `data.json` (zgodnego ze starym klientem Tkinter).
   - Eksport historii zamówień do pliku tekstowego ASCII `.txt` (`order_history_YYYYMMDD_HHMMSS.txt`) w formacie tabeli retro.
@@ -88,7 +90,26 @@ Jeśli którakolwiek z bramek zgłosi błąd, agent jest zobowiązany do natychm
 
 ## 6. Dyscyplina Git i Zarządzanie Wersjami
 
-- Wszystkie prace rozwojowe v2 są prowadzone na dedykowanym branchu roboczym: `modernization/v2`.
+- Wszystkie prace rozwojowe v3 są prowadzone na dedykowanym branchu roboczym: `feat/admin-catalog-v3`.
 - Po każdym etapie należy utworzyć atomowy, czytelny commit opisujący wprowadzone zmiany wg konwencji Conventional Commits (np. `feat(domain): ...`, `test: ...`, `chore: ...`).
 - **Bezwzględny zakaz wykonywania `git push`** do repozytorium zdalnego bez wyraźnego polecenia użytkownika.
 - Pierwotny kod Pythona v1 (Tkinter, FastAPI, bazy SQLite) pozostaje zarchiwizowany w katalogu `legacy/` jako punkt odniesienia.
+
+---
+
+## 7. Standardy Bezpieczeństwa, Katalogu i Danych Klientów (v3.0)
+
+- **Bezpieczeństwo i Dostęp Administracyjny:**
+  - Weryfikacja hasła odbywa się **wyłącznie na backendzie** (`/api/admin/login`) z wykorzystaniem bezpiecznego porównania stałoczasowego.
+  - Sesja administracyjna jest utrzymywana za pomocą podpisanego kryptograficznie ciasteczka `HttpOnly` (`SameSite=Strict; Path=/`, HMAC-SHA256 z kluczem `ADMIN_SESSION_SECRET`, ważność 2h).
+  - **Bezwzględny zakaz umieszczania hasła ani sekretu sesji admina w zmiennych klienckich `VITE_*`** lub w jakimkolwiek kodzie przekazywanym do przeglądarki.
+- **Zarządzanie Katalogiem i Migracja Produktów:**
+  - Struktura kategorii opiera się na dynamicznym modelu `Category` (`id`, `name`, `slug`, `description`, `isDefault`).
+  - Gwarancja istnienia **nieusuwalnej kategorii domyślnej** (`cat-default` / `Ogólne`, `isDefault: true`).
+  - **Automatyczna migracja produktów:** usunięcie kategorii posiadającej przypisane produkty automatycznie reasygnuje je do kategorii domyślnej (lub wybranej kategorii docelowej).
+  - Zapewnienie funkcji **ręcznej i masowej migracji produktów** między kategoriami (`POST /api/categories/migrate`).
+- **Ochrona Klientów i Prywatności (PII / Anty-spam):**
+  - **Usunięcie akcji destrukcyjnych z widoku publicznego:** w publicznym komponencie `CustomersPanel` nie ma przycisku usuwania klientów. Usuwanie klientów (`DELETE /api/customers/:id`) jest dozwolone wyłącznie w Panelu Admina po poprawnej autoryzacji sesji.
+  - **Ochrona PII:** publiczna lista klientów maskuje adresy e-mail (np. `j***i@example.com`).
+  - **Unikalność e-maili:** system wymusza unikalność adresu e-mail (case-insensitive) i zwraca kod `409 Conflict` przy próbie ponownej rejestracji.
+  - **Zabezpieczenie przed botami i nadużyciami:** formularz rejestracji zawiera niewidoczne pole **honeypot** (np. `companyWebsite`, blokujące rejestrację gdy zostanie wypełnione) oraz mechanizm **rate-limitingu** (np. max 5 rejestracji / 10 minut na IP/sesję z kodem `429 Too Many Requests`).
