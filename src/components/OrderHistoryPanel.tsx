@@ -43,7 +43,7 @@ export function OrderHistoryPanel() {
 
   return (
     <>
-      <section className="retro-panel" aria-labelledby="orders-heading">
+      <section id="panel-orders" className="retro-panel" aria-labelledby="orders-heading">
         <div className="panel-header">
           <h2 id="orders-heading" className="panel-title">
             // HISTORIA ZAMÓWIEŃ ({orders.length})
@@ -73,15 +73,9 @@ export function OrderHistoryPanel() {
             [BRAK ZAMÓWIEŃ W HISTORII. ZŁÓŻ PIERWSZE ZAMÓWIENIE W PANELU KASY]
           </div>
         ) : (
-          <div
-            style={{
-              overflowX: 'auto',
-              maxHeight: '340px',
-              border: '1px solid var(--border-dim)',
-              backgroundColor: 'var(--bg-main)',
-            }}
-          >
+          <div className="orders-table-container">
             <table
+              className="retro-responsive-table"
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
@@ -116,10 +110,14 @@ export function OrderHistoryPanel() {
                     }}
                     title="Kliknij dwukrotnie, aby otworzyć szczegóły"
                   >
-                    <td style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}>
+                    <td
+                      data-label="Data"
+                      style={{ padding: '0.45rem 0.5rem', whiteSpace: 'nowrap' }}
+                    >
                       {order.timestamp ? order.timestamp.slice(0, 16) : '---'}
                     </td>
                     <td
+                      data-label="Klient"
                       style={{
                         padding: '0.45rem 0.5rem',
                         color: 'var(--text-bright)',
@@ -128,10 +126,14 @@ export function OrderHistoryPanel() {
                     >
                       {order.customer.name}
                     </td>
-                    <td style={{ padding: '0.45rem 0.5rem', color: 'var(--text-muted)' }}>
+                    <td
+                      data-label="Płatność"
+                      style={{ padding: '0.45rem 0.5rem', color: 'var(--text-muted)' }}
+                    >
                       {formatPaymentShort(order)}
                     </td>
                     <td
+                      data-label="Kwota"
                       style={{
                         padding: '0.45rem 0.5rem',
                         textAlign: 'right',
@@ -143,6 +145,7 @@ export function OrderHistoryPanel() {
                       {formatPLN(order.totalCents)}
                     </td>
                     <td
+                      className="table-actions-cell"
                       style={{
                         padding: '0.45rem 0.5rem',
                         textAlign: 'center',

@@ -64,7 +64,7 @@ export function CustomersPanel() {
   };
 
   return (
-    <section className="retro-panel" aria-labelledby="customers-heading">
+    <section id="panel-customers" className="retro-panel" aria-labelledby="customers-heading">
       <div className="panel-header">
         <h2 id="customers-heading" className="panel-title">
           // BAZA KLIENTÓW ({customers.length})
@@ -79,6 +79,7 @@ export function CustomersPanel() {
           padding: '0.5rem 0.75rem',
           marginBottom: '0.85rem',
           fontSize: 'var(--font-size-xs)',
+          overflowWrap: 'anywhere',
         }}
       >
         <span style={{ color: 'var(--text-muted)' }}>AKTYWNY KLIENT DO ZAMÓWIENIA: </span>
@@ -188,17 +189,7 @@ export function CustomersPanel() {
       </form>
 
       {/* Lista klientów */}
-      <div
-        role="group"
-        aria-label="Lista zarejestrowanych klientów"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.4rem',
-          maxHeight: '220px',
-          overflowY: 'auto',
-        }}
-      >
+      <div role="group" aria-label="Lista zarejestrowanych klientów" className="customers-list">
         {customers.length === 0 ? (
           <div
             style={{
@@ -246,6 +237,7 @@ export function CustomersPanel() {
                     color: isSelected ? 'var(--text-bright)' : 'var(--text-primary)',
                     cursor: 'pointer',
                     flex: 1,
+                    minWidth: 0,
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.4rem',
@@ -256,11 +248,12 @@ export function CustomersPanel() {
                     style={{
                       color: isSelected ? 'var(--accent)' : 'var(--text-dim)',
                       fontWeight: 'bold',
+                      flexShrink: 0,
                     }}
                   >
                     {isSelected ? '[●]' : '[○]'}
                   </span>
-                  <div>
+                  <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                     <strong style={{ fontSize: 'var(--font-size-sm)' }}>{customer.name}</strong>{' '}
                     <span
                       style={{

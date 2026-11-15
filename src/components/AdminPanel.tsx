@@ -357,7 +357,15 @@ export function AdminPanel() {
     <section className="retro-panel" aria-labelledby="admin-panel-title">
       {/* Nagłówek Panelu Admina */}
       <div className="panel-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+            minWidth: 0,
+          }}
+        >
           <h2
             id="admin-panel-title"
             className="panel-title"
@@ -368,7 +376,7 @@ export function AdminPanel() {
           <span className="badge badge-accent">[ADMIN ROOT]</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
           <button
             type="button"
             onClick={() => setActiveView('shop')}
@@ -388,27 +396,15 @@ export function AdminPanel() {
       </div>
 
       {/* Nawigacja Zakładkowa */}
-      <div
-        role="tablist"
-        aria-label="Zakładki Sekcji Administracyjnej"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.4rem',
-          borderBottom: '2px solid var(--border-main)',
-          paddingBottom: '0.75rem',
-          marginBottom: '1.25rem',
-        }}
-      >
+      <div role="tablist" aria-label="Zakładki Sekcji Administracyjnej" className="admin-tablist">
         <button
           id={`${baseId}-tab-categories`}
           role="tab"
           type="button"
           aria-selected={activeTab === 'categories'}
           aria-controls={`${baseId}-panel-categories`}
-          className={activeTab === 'categories' ? 'btn-active' : ''}
+          className={`admin-tab-btn ${activeTab === 'categories' ? 'btn-active' : ''}`}
           onClick={() => setActiveTab('categories')}
-          style={{ padding: '0.35rem 0.85rem' }}
         >
           {activeTab === 'categories' ? '&gt; [1] KATEGORIE' : '[1] KATEGORIE'} ({categories.length}
           )
@@ -420,9 +416,8 @@ export function AdminPanel() {
           type="button"
           aria-selected={activeTab === 'products'}
           aria-controls={`${baseId}-panel-products`}
-          className={activeTab === 'products' ? 'btn-active' : ''}
+          className={`admin-tab-btn ${activeTab === 'products' ? 'btn-active' : ''}`}
           onClick={() => setActiveTab('products')}
-          style={{ padding: '0.35rem 0.85rem' }}
         >
           {activeTab === 'products' ? '&gt; [2] PRODUKTY' : '[2] PRODUKTY'} ({catalog.length})
         </button>
@@ -433,9 +428,8 @@ export function AdminPanel() {
           type="button"
           aria-selected={activeTab === 'migration'}
           aria-controls={`${baseId}-panel-migration`}
-          className={activeTab === 'migration' ? 'btn-active' : ''}
+          className={`admin-tab-btn ${activeTab === 'migration' ? 'btn-active' : ''}`}
           onClick={() => setActiveTab('migration')}
-          style={{ padding: '0.35rem 0.85rem' }}
         >
           {activeTab === 'migration' ? '&gt; [3] MIGRACJA PRODUKTÓW' : '[3] MIGRACJA PRODUKTÓW'}
         </button>
@@ -446,9 +440,8 @@ export function AdminPanel() {
           type="button"
           aria-selected={activeTab === 'customers'}
           aria-controls={`${baseId}-panel-customers`}
-          className={activeTab === 'customers' ? 'btn-active' : ''}
+          className={`admin-tab-btn ${activeTab === 'customers' ? 'btn-active' : ''}`}
           onClick={() => setActiveTab('customers')}
-          style={{ padding: '0.35rem 0.85rem' }}
         >
           {activeTab === 'customers' ? '&gt; [4] KLIENCI' : '[4] KLIENCI'} ({customers.length})
         </button>
@@ -586,8 +579,18 @@ export function AdminPanel() {
                         gap: '0.5rem',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <strong style={{ color: 'var(--text-bright)' }}>{cat.name}</strong>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '0.45rem',
+                          minWidth: 0,
+                        }}
+                      >
+                        <strong style={{ color: 'var(--text-bright)', overflowWrap: 'anywhere' }}>
+                          {cat.name}
+                        </strong>
                         {cat.isDefault && <span className="badge badge-accent">[DOMYŚLNA]</span>}
                         <span className="badge badge-warning">ID: {cat.id}</span>
                         <span
@@ -597,7 +600,7 @@ export function AdminPanel() {
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                         <button
                           type="button"
                           onClick={() => startEditCategory(cat)}
@@ -672,9 +675,9 @@ export function AdminPanel() {
                           </label>
                           <select
                             id={`target-cat-${cat.id}`}
+                            className="select-sm"
                             value={deleteTargetCatId}
                             onChange={(e) => setDeleteTargetCatId(e.target.value)}
-                            style={{ padding: '0.25rem', fontSize: 'var(--font-size-xs)' }}
                           >
                             {categories
                               .filter((c) => c.id !== cat.id)
@@ -739,6 +742,8 @@ export function AdminPanel() {
                 color: 'var(--text-bright)',
                 display: 'flex',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
               }}
             >
               <span>
@@ -760,7 +765,7 @@ export function AdminPanel() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
                 gap: '0.75rem',
               }}
             >
@@ -959,14 +964,7 @@ export function AdminPanel() {
           </div>
 
           {/* Tabela / Lista Produktów */}
-          <div
-            style={{
-              border: '1px solid var(--border-dim)',
-              backgroundColor: 'var(--bg-main)',
-              maxHeight: '480px',
-              overflowY: 'auto',
-            }}
-          >
+          <div className="admin-table-wrap">
             {filteredCatalog.length === 0 ? (
               <div
                 style={{
@@ -979,6 +977,7 @@ export function AdminPanel() {
               </div>
             ) : (
               <table
+                className="retro-responsive-table"
                 style={{
                   width: '100%',
                   borderCollapse: 'collapse',
@@ -1012,27 +1011,41 @@ export function AdminPanel() {
                           editingProductId === product.id ? 'var(--bg-hover)' : 'transparent',
                       }}
                     >
-                      <td style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}>
+                      <td
+                        data-label="SKU"
+                        style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)' }}
+                      >
                         <span className="badge badge-accent">[{product.sku}]</span>
                       </td>
-                      <td style={{ padding: '0.5rem' }}>
+                      <td data-label="NAZWA" style={{ padding: '0.5rem' }}>
                         <strong style={{ color: 'var(--text-bright)' }}>{product.name}</strong>
                       </td>
-                      <td style={{ padding: '0.5rem', color: 'var(--text-muted)' }}>
+                      <td
+                        data-label="KATEGORIA"
+                        style={{ padding: '0.5rem', color: 'var(--text-muted)' }}
+                      >
                         {product.category}
                       </td>
-                      <td style={{ padding: '0.5rem', color: 'var(--text-bright)' }}>
+                      <td
+                        data-label="CENA"
+                        style={{ padding: '0.5rem', color: 'var(--text-bright)' }}
+                      >
                         {formatPLN(product.priceCents)}
                       </td>
-                      <td style={{ padding: '0.5rem' }}>{product.stockQuantity} szt.</td>
-                      <td style={{ padding: '0.5rem' }}>
+                      <td data-label="MAGAZYN" style={{ padding: '0.5rem' }}>
+                        {product.stockQuantity} szt.
+                      </td>
+                      <td data-label="STATUS" style={{ padding: '0.5rem' }}>
                         {product.inStock && product.stockQuantity > 0 ? (
                           <span style={{ color: 'var(--accent)' }}>[W SPRZEDAŻY]</span>
                         ) : (
                           <span style={{ color: 'var(--error)' }}>[NIEDOSTĘPNY]</span>
                         )}
                       </td>
-                      <td style={{ padding: '0.5rem', textAlign: 'right' }}>
+                      <td
+                        className="table-actions-cell"
+                        style={{ padding: '0.5rem', textAlign: 'right' }}
+                      >
                         <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
                           <button
                             type="button"
@@ -1099,7 +1112,7 @@ export function AdminPanel() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))',
                 gap: '1rem',
                 marginBottom: '1rem',
               }}
@@ -1189,19 +1202,7 @@ export function AdminPanel() {
             </div>
 
             {/* Lista produktów z checkboxami */}
-            <div
-              style={{
-                maxHeight: '300px',
-                overflowY: 'auto',
-                border: '1px solid var(--border-dim)',
-                backgroundColor: 'var(--bg-panel)',
-                padding: '0.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.35rem',
-                marginBottom: '1rem',
-              }}
-            >
+            <div className="admin-migration-list">
               {sourceProducts.length === 0 ? (
                 <div
                   style={{
@@ -1222,8 +1223,9 @@ export function AdminPanel() {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
+                        flexWrap: 'wrap',
                         gap: '0.5rem',
-                        padding: '0.35rem 0.5rem',
+                        padding: '0.45rem 0.5rem',
                         backgroundColor: isChecked ? 'var(--bg-hover)' : 'transparent',
                         cursor: 'pointer',
                         fontSize: 'var(--font-size-xs)',
@@ -1319,15 +1321,7 @@ export function AdminPanel() {
           </div>
 
           {/* Lista Klientów */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-              maxHeight: '520px',
-              overflowY: 'auto',
-            }}
-          >
+          <div className="admin-customers-list">
             {filteredCustomers.length === 0 ? (
               <div
                 style={{
@@ -1358,8 +1352,15 @@ export function AdminPanel() {
                       gap: '0.5rem',
                     }}
                   >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '0.45rem',
+                        }}
+                      >
                         <strong style={{ color: 'var(--text-bright)' }}>{customer.name}</strong>
                         <span className="badge">ID: {customer.id}</span>
                       </div>
@@ -1368,6 +1369,7 @@ export function AdminPanel() {
                           fontSize: 'var(--font-size-xs)',
                           color: 'var(--text-primary)',
                           marginTop: '0.15rem',
+                          overflowWrap: 'anywhere',
                         }}
                       >
                         E-mail: <span style={{ color: 'var(--accent)' }}>{customer.email}</span>
@@ -1390,7 +1392,7 @@ export function AdminPanel() {
                           USUŃ
                         </button>
                       ) : (
-                        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                        <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                           <button
                             type="button"
                             className="btn-danger"

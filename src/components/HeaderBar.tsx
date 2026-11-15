@@ -191,7 +191,7 @@ export function HeaderBar({ onOpenLoginModal }: HeaderBarProps = {}) {
           </button>
         ) : (
           <div
-            style={{ display: 'inline-flex', gap: '0.35rem' }}
+            className="retro-header-reset-group"
             role="group"
             aria-label="Potwierdzenie resetu bazy"
           >

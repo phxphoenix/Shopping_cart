@@ -24,7 +24,7 @@ export function CartPanel() {
   const percentage = Math.min(100, Math.round((totals.subtotalCents / 20000) * 100));
 
   return (
-    <section className="retro-panel" aria-labelledby="cart-heading">
+    <section id="panel-cart" className="retro-panel" aria-labelledby="cart-heading">
       <div className="panel-header">
         <h2 id="cart-heading" className="panel-title">
           // KOSZYK ({totals.itemCount} szt.)
@@ -59,6 +59,8 @@ export function CartPanel() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.25rem',
             marginBottom: '0.25rem',
           }}
         >
@@ -109,32 +111,17 @@ export function CartPanel() {
           [KOSZYK JEST PUSTY. WYBIERZ PRODUKTY Z KATALOGU]
         </div>
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.5rem',
-            marginBottom: '1rem',
-            maxHeight: '320px',
-            overflowY: 'auto',
-          }}
-        >
+        <div className="cart-items-list">
           {cart.map((item) => (
-            <div
-              key={item.product.id}
-              style={{
-                border: '1px solid var(--border-dim)',
-                backgroundColor: 'var(--bg-main)',
-                padding: '0.5rem 0.65rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
-              }}
-            >
-              <div style={{ flex: 1, minWidth: '150px' }}>
-                <div style={{ color: 'var(--text-bright)', fontWeight: 600 }}>
+            <div key={item.product.id} className="cart-item-row">
+              <div className="cart-item-info">
+                <div
+                  style={{
+                    color: 'var(--text-bright)',
+                    fontWeight: 600,
+                    overflowWrap: 'break-word',
+                  }}
+                >
                   {item.product.name}
                 </div>
                 <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
@@ -143,18 +130,13 @@ export function CartPanel() {
               </div>
 
               {/* Kontrolki ilości i suma linii */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                }}
-              >
+              <div className="cart-item-controls">
                 <button
                   type="button"
+                  className="qty-btn"
                   onClick={() => decrementCartItem(item.product.id)}
                   aria-label={`Zmniejsz ilość dla ${item.product.name}`}
-                  style={{ padding: '0.15rem 0.45rem', fontSize: 'var(--font-size-xs)' }}
+                  style={{ fontSize: 'var(--font-size-xs)' }}
                 >
                   -
                 </button>
@@ -170,9 +152,10 @@ export function CartPanel() {
                 </span>
                 <button
                   type="button"
+                  className="qty-btn"
                   onClick={() => incrementCartItem(item.product.id)}
                   aria-label={`Zwiększ ilość dla ${item.product.name}`}
-                  style={{ padding: '0.15rem 0.45rem', fontSize: 'var(--font-size-xs)' }}
+                  style={{ fontSize: 'var(--font-size-xs)' }}
                 >
                   +
                 </button>
@@ -183,6 +166,7 @@ export function CartPanel() {
                     color: 'var(--text-bright)',
                     fontWeight: 600,
                     fontSize: 'var(--font-size-sm)',
+                    marginLeft: 'auto',
                   }}
                 >
                   {formatPLN(item.lineTotalCents)}
@@ -193,7 +177,7 @@ export function CartPanel() {
                   className="btn-danger"
                   aria-label={`Usuń ${item.product.name} z koszyka`}
                   style={{
-                    padding: '0.15rem 0.45rem',
+                    padding: '0.25rem 0.5rem',
                     fontSize: 'var(--font-size-xs)',
                   }}
                   title="Usuń tę pozycję z koszyka"

@@ -9,6 +9,7 @@ import {
   AdminLoginModal,
   AdminPanel,
   StatusBar,
+  MobileNavBar,
 } from '@/components';
 import { useShopStore } from '@/store/useShopStore';
 
@@ -65,6 +66,8 @@ export default function App() {
       </main>
 
       <StatusBar />
+
+      <MobileNavBar showAdminView={showAdminView} />
 
       <AdminLoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </div>

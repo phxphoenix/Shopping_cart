@@ -12,3 +12,4 @@ export * from './OrderDetailsModal';
 export * from './AdminLoginModal';
 export * from './AdminPanel';
 export * from './StatusBar';
+export * from './MobileNavBar';

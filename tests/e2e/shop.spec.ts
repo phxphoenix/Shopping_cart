@@ -750,4 +750,126 @@ test.describe('Retro Shopping Cart v3.0 - E2E Suite', () => {
     });
     expect(migrateRes.status()).toBe(401);
   });
+
+  test('Scenario 13: iPhone & mobile browser UX (375x667 iPhone SE - no horizontal overflow, 16px anti-zoom inputs, mobile bottom nav, full checkout & admin tabs)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('./');
+    await expect(
+      page.getByRole('heading', { name: /SHOPPING CART \/\/ TERMINAL v2\.0/i })
+    ).toBeVisible();
+
+    const assertNoOverflow = async () => {
+      const overflowing = await page.evaluate(() => {
+        return document.documentElement.scrollWidth > window.innerWidth;
+      });
+      expect(overflowing).toBe(false);
+    };
+
+    await assertNoOverflow();
+
+    // Verify viewport-fit=cover for iPhone Notch / Dynamic Island / Home Indicator
+    const viewportContent = await page.locator('meta[name="viewport"]').getAttribute('content');
+    expect(viewportContent).toContain('viewport-fit=cover');
+
+    // Verify header is not sticky on mobile (preserves vertical screen space)
+    const headerPosition = await page
+      .locator('.retro-header')
+      .evaluate((el) => getComputedStyle(el).position);
+    expect(headerPosition).not.toBe('sticky');
+
+    // Verify all visible text/search/email/number/select inputs are >= 16px on mobile (prevents iOS Safari auto-zoom)
+    const smallInputs = await page.evaluate(() => {
+      const els = Array.from(
+        document.querySelectorAll(
+          'input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="number"], select, textarea'
+        )
+      );
+      return els
+        .filter((el) => {
+          const rect = el.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        })
+        .map((el) => ({
+          id: el.id,
+          fontSize: Number.parseFloat(getComputedStyle(el).fontSize),
+        }))
+        .filter((item) => item.fontSize < 16);
+    });
+    expect(smallInputs).toEqual([]);
+
+    // Verify mobile bottom nav is visible and updates live cart badge
+    const mobileNav = page.getByRole('navigation', { name: /Szybka nawigacja mobilna/i });
+    await expect(mobileNav).toBeVisible();
+    await expect(mobileNav.getByRole('button', { name: /KOSZYK \(0\)/i })).toBeVisible();
+
+    // Axe accessibility check on mobile shop view
+    const mobileShopAxeResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(
+      mobileShopAxeResults.violations.filter(
+        (v) => v.impact === 'critical' || v.impact === 'serious'
+      )
+    ).toEqual([]);
+
+    // Add product from catalog on mobile
+    const floppyArticle = page.locator('article', { hasText: 'AC-FLOPPY-08' });
+    await floppyArticle.getByRole('button', { name: /DODAJ ->/i }).click();
+    await expect(mobileNav.getByRole('button', { name: /Koszyk \(1\)/i })).toBeVisible();
+
+    // Jump to checkout via mobile nav and place order
+    await mobileNav.getByRole('button', { name: /KASA/i }).click();
+    const checkoutPanel = page.locator('section', { hasText: '// KASA & PŁATNOŚĆ' });
+    await checkoutPanel.getByRole('button', { name: 'PayPal' }).click();
+    await page.getByLabel(/Adres e-mail konta PayPal/i).fill('iphone.user@apple.com');
+    await checkoutPanel.getByRole('button', { name: /ZAMÓW I ZAPŁAĆ/i }).click();
+
+    const ordersPanel = page.locator('section', { hasText: '// HISTORIA ZAMÓWIEŃ' });
+    await expect(ordersPanel.getByText('PayPal (iphone.user@apple.com)')).toBeVisible();
+    await assertNoOverflow();
+
+    // Open OrderDetailsModal on mobile and verify no overflow
+    await ordersPanel
+      .getByRole('button', { name: /Szczegóły/i })
+      .first()
+      .click();
+    const orderModal = page.getByRole('dialog', { name: /\/\/ SZCZEGÓŁY ZAMÓWIENIA/i });
+    await expect(orderModal).toBeVisible();
+    await assertNoOverflow();
+    await orderModal.getByRole('button', { name: /ZAMKNIJ \[ESC\]/i }).click();
+
+    // Open Admin Panel and check all 4 tabs on mobile (375x667) without overflow
+    await page.getByRole('button', { name: 'PANEL ADMINA' }).click();
+    const loginModal = page.getByRole('dialog', { name: /\/\/ AUTORYZACJA ADMINISTRATORA/i });
+    await expect(loginModal).toBeVisible();
+    await assertNoOverflow();
+    await page.getByLabel(/Hasło dostępu administratora:/i).fill('admin123');
+    await page.getByRole('button', { name: /AUTORYZUJ DOSTĘP/i }).click();
+
+    await expect(
+      page.getByRole('heading', { name: /\/\/ SEKCJA ADMINISTRACYJNA \/\/ TRYB UPRAWNIONY/i })
+    ).toBeVisible();
+    await assertNoOverflow();
+
+    for (const tabRegex of [
+      /\[2\] PRODUKTY/i,
+      /\[3\] MIGRACJA PRODUKTÓW/i,
+      /\[4\] KLIENCI/i,
+      /\[1\] KATEGORIE/i,
+    ]) {
+      await page.getByRole('tab', { name: tabRegex }).click();
+      await assertNoOverflow();
+    }
+
+    // Axe accessibility check on mobile viewport
+    const mobileAxeResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const mobileSevere = mobileAxeResults.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(mobileSevere).toEqual([]);
+  });
 });

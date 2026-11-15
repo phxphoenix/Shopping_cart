@@ -25,6 +25,7 @@
     6px 100%;
   z-index: 9999;
   opacity: 0.65;
+  transform: translateZ(0);
 }
 
 /* Winieta ekranu kineskopowego */
@@ -36,6 +37,7 @@
   pointer-events: none;
   background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
   z-index: 9998;
+  transform: translateZ(0);
 }
 
 /* Poświata fosforu dla nagłówków i obramowań */

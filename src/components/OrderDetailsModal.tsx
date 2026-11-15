@@ -67,16 +67,7 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
 
         <div className="modal-body">
           {/* Informacje ogólne */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '0.75rem',
-              border: '1px solid var(--border-dim)',
-              backgroundColor: 'var(--bg-main)',
-              padding: '0.75rem',
-            }}
-          >
+          <div className="order-details-meta-grid">
             <div>
               <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
                 Data i godzina:
@@ -88,19 +79,33 @@ export function OrderDetailsModal({ order, onClose }: OrderDetailsModalProps) {
               <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
                 Klient (snapshot):
               </div>
-              <strong style={{ color: 'var(--text-bright)' }}>{order.customer.name}</strong>
+              <strong style={{ color: 'var(--text-bright)', overflowWrap: 'anywhere' }}>
+                {order.customer.name}
+              </strong>
               {order.customer.email && (
-                <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                <div
+                  style={{
+                    fontSize: 'var(--font-size-xs)',
+                    color: 'var(--text-muted)',
+                    overflowWrap: 'anywhere',
+                  }}
+                >
                   {order.customer.email}
                 </div>
               )}
             </div>
 
-            <div style={{ gridColumn: 'span 2' }}>
+            <div className="order-details-span-full">
               <div style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-xs)' }}>
                 Metoda płatności:
               </div>
-              <div style={{ color: 'var(--text-bright)', marginTop: '0.2rem' }}>
+              <div
+                style={{
+                  color: 'var(--text-bright)',
+                  marginTop: '0.2rem',
+                  overflowWrap: 'anywhere',
+                }}
+              >
                 {payment?.method === 'card' && (
                   <span>
                     Karta kredytowa: <strong>{payment.maskedCard}</strong> (ważność:{' '}

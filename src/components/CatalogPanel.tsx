@@ -40,7 +40,7 @@ export function CatalogPanel() {
   };
 
   return (
-    <section className="retro-panel" aria-labelledby="catalog-heading">
+    <section id="panel-catalog" className="retro-panel" aria-labelledby="catalog-heading">
       <div className="panel-header">
         <h2 id="catalog-heading" className="panel-title">
           // KATALOG PRODUKTÓW ({filteredProducts.length})
@@ -127,16 +127,7 @@ export function CatalogPanel() {
           [BRAK POZYCJI W KATALOGU SPEŁNIAJĄCYCH KRYTERIA]
         </div>
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-            maxHeight: '620px',
-            overflowY: 'auto',
-            paddingRight: '0.25rem',
-          }}
-        >
+        <div className="catalog-products-list">
           {filteredProducts.map((product) => {
             const qty = getQty(product.id);
             const isAvailable = Boolean(product.inStock && product.stockQuantity > 0);
@@ -165,18 +156,34 @@ export function CatalogPanel() {
                     gap: '0.35rem',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '0.45rem',
+                      minWidth: 0,
+                    }}
+                  >
                     <span className="badge badge-accent">[{product.sku}]</span>
                     <strong
                       style={{
                         color: 'var(--text-bright)',
                         fontSize: 'var(--font-size-base)',
+                        overflowWrap: 'break-word',
                       }}
                     >
                       {product.name}
                     </strong>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '0.35rem',
+                    }}
+                  >
                     <span className="badge">kat: {product.category}</span>
                     {isAvailable ? (
                       <span
@@ -214,18 +221,7 @@ export function CatalogPanel() {
                 </p>
 
                 {/* Wiersz ceny i dodawania do koszyka */}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                    borderTop: '1px dotted var(--border-dim)',
-                    paddingTop: '0.5rem',
-                    marginTop: '0.25rem',
-                  }}
-                >
+                <div className="catalog-product-footer">
                   <div>
                     <span
                       style={{
@@ -247,13 +243,13 @@ export function CatalogPanel() {
                   </div>
 
                   {/* Kontrolka ilości i przycisk Dodaj */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <div className="catalog-qty-controls">
                     <button
                       type="button"
+                      className="qty-btn"
                       onClick={() => setQty(product.id, qty - 1)}
                       disabled={!isAvailable || qty <= 1}
                       aria-label={`Zmniejsz ilość dla ${product.name}`}
-                      style={{ padding: '0.2rem 0.5rem' }}
                     >
                       -
                     </button>
@@ -263,23 +259,19 @@ export function CatalogPanel() {
                     <input
                       id={`qty-${product.id}`}
                       type="number"
+                      className="qty-input"
                       min={1}
                       max={99}
                       value={qty}
                       disabled={!isAvailable}
                       onChange={(e) => handleQtyChange(product.id, e)}
-                      style={{
-                        width: '46px',
-                        textAlign: 'center',
-                        padding: '0.2rem',
-                      }}
                     />
                     <button
                       type="button"
+                      className="qty-btn"
                       onClick={() => setQty(product.id, qty + 1)}
                       disabled={!isAvailable || qty >= 99}
                       aria-label={`Zwiększ ilość dla ${product.name}`}
-                      style={{ padding: '0.2rem 0.5rem' }}
                     >
                       +
                     </button>
@@ -287,8 +279,7 @@ export function CatalogPanel() {
                       type="button"
                       onClick={() => handleAddToCart(product.id)}
                       disabled={!isAvailable}
-                      className="btn-primary"
-                      style={{ padding: '0.25rem 0.65rem' }}
+                      className="btn-primary catalog-add-btn"
                       title={
                         isAvailable
                           ? 'Dodaj produkt do koszyka'

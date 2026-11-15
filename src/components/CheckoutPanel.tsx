@@ -96,7 +96,7 @@ export function CheckoutPanel() {
   const isOrderBlocked = cart.length === 0 || !selectedCustomerId;
 
   return (
-    <section className="retro-panel" aria-labelledby="checkout-heading">
+    <section id="panel-checkout" className="retro-panel" aria-labelledby="checkout-heading">
       <div className="panel-header">
         <h2 id="checkout-heading" className="panel-title">
           // KASA & PŁATNOŚĆ
@@ -116,10 +116,19 @@ export function CheckoutPanel() {
           gap: '0.35rem',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.25rem',
+          }}
+        >
           <span style={{ color: 'var(--text-muted)' }}>Zamawiający:</span>
           {selectedCustomer ? (
-            <strong style={{ color: 'var(--text-bright)' }}>{selectedCustomer.name}</strong>
+            <strong style={{ color: 'var(--text-bright)', overflowWrap: 'anywhere' }}>
+              {selectedCustomer.name}
+            </strong>
           ) : (
             <span style={{ color: 'var(--warning)' }}>[Wybierz klienta w panelu]</span>
           )}
@@ -154,20 +163,15 @@ export function CheckoutPanel() {
         >
           Wybierz metodę płatności:
         </div>
-        <div
-          role="group"
-          aria-label="Wybór metody płatności"
-          style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}
-        >
+        <div role="group" aria-label="Wybór metody płatności" className="payment-method-group">
           <button
             type="button"
             onClick={() => {
               setMethod('card');
               setErrorMsg(null);
             }}
-            className={method === 'card' ? 'btn-active' : ''}
+            className={`payment-method-btn ${method === 'card' ? 'btn-active' : ''}`}
             aria-pressed={method === 'card'}
-            style={{ fontSize: 'var(--font-size-xs)', flex: 1 }}
           >
             Karta kredytowa
           </button>
@@ -177,9 +181,8 @@ export function CheckoutPanel() {
               setMethod('paypal');
               setErrorMsg(null);
             }}
-            className={method === 'paypal' ? 'btn-active' : ''}
+            className={`payment-method-btn ${method === 'paypal' ? 'btn-active' : ''}`}
             aria-pressed={method === 'paypal'}
-            style={{ fontSize: 'var(--font-size-xs)', flex: 1 }}
           >
             PayPal
           </button>
@@ -189,9 +192,8 @@ export function CheckoutPanel() {
               setMethod('bitcoin');
               setErrorMsg(null);
             }}
-            className={method === 'bitcoin' ? 'btn-active' : ''}
+            className={`payment-method-btn ${method === 'bitcoin' ? 'btn-active' : ''}`}
             aria-pressed={method === 'bitcoin'}
-            style={{ fontSize: 'var(--font-size-xs)', flex: 1 }}
           >
             Bitcoin
           </button>
@@ -226,7 +228,7 @@ export function CheckoutPanel() {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+            <div className="checkout-card-meta-grid">
               <div className="form-group">
                 <label htmlFor="card-expiry" className="form-label">
                   Ważność (MM/RR):
@@ -337,9 +339,16 @@ export function CheckoutPanel() {
                 gap: '0.25rem',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '0.25rem',
+                }}
+              >
                 <span style={{ color: 'var(--text-muted)' }}>Równowartość BTC:</span>
-                <strong style={{ color: 'var(--accent)' }}>
+                <strong style={{ color: 'var(--accent)', overflowWrap: 'anywhere' }}>
                   ~{centsToBtcString(totals.totalCents)} BTC
                 </strong>
               </div>
